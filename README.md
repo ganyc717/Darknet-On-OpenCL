@@ -15,9 +15,10 @@ So that it could also run on Windows.<br>
 Make sure you have OpenCL installed, and set environment variables OPENCL_SDK <br>
 point to your OpenCL installed path.<br>
 `clBLAS`<br>
-clBLAS is equivalent to cuBLAS, you can find the it [here](https://github.com/clMathLibraries/clBLAS)<br>
-If your platform is Windows on x64, I have already prepared the clBLAS <br>
-binary library. You can find it here.
+clBLAS is equivalent to cuBLAS, you can find the source code [here](https://github.com/clMathLibraries/clBLAS)<br>
+I have prepared the binary library for Windows/Ubuntu x64 platform.<br>
+You can find clBLAS.lib/clBLAS.dll for Windows and libclBLAS.so for Linux <br>
+as well as header file [here](https://github.com/ganyc717/Darknet-On-OpenCL/tree/master/darknet_cl/clBLAS).<br>
 ## Build
 `Windows`<br>
 This project is prepared with Visual Studio 2017, just open darknet_cl.sln<br>
