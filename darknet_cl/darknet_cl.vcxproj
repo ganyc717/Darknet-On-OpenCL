@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{A3C6E7DC-D1AB-40FD-94E0-01019A373AC7}</ProjectGuid>
+    <RootNamespace>darknetcl</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup />
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(OPENCL_SDK)include;$(SolutionDir)darknet_cl\include;$(SolutionDir)darknet_cl\clBLAS;$(SolutionDir)darknet_cl\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GPU;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(OPENCL_SDK)lib\x64;$(SolutionDir)darknet_cl\clBLAS;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenCL.lib;clBLAS.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(OPENCL_SDK)\include;$(SolutionDir)\darknet_cl\include;$(SolutionDir)\darknet_cl\clBLAS;$(SolutionDir)\darknet_cl\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>GPU;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalLibraryDirectories>$(OPENCL_SDK)\lib\x64;$(SolutionDir)\darknet_cl\clBLAS;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>OpenCL.lib;clBLAS.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="example\art.cpp" />
+    <ClCompile Include="example\attention.cpp" />
+    <ClCompile Include="example\captcha.cpp" />
+    <ClCompile Include="example\cifar.cpp" />
+    <ClCompile Include="example\classifier.cpp" />
+    <ClCompile Include="example\coco.cpp" />
+    <ClCompile Include="example\darknet.cpp" />
+    <ClCompile Include="example\detector.cpp" />
+    <ClCompile Include="example\lsd.cpp" />
+    <ClCompile Include="example\nightmare.cpp" />
+    <ClCompile Include="example\regressor.cpp" />
+    <ClCompile Include="example\rnn.cpp" />
+    <ClCompile Include="example\segmenter.cpp" />
+    <ClCompile Include="example\super.cpp" />
+    <ClCompile Include="example\tag.cpp" />
+    <ClCompile Include="example\yolo.cpp" />
+    <ClCompile Include="src\activations.cpp" />
+    <ClCompile Include="src\activation_kernels_cl.cpp" />
+    <ClCompile Include="src\activation_layer.cpp" />
+    <ClCompile Include="src\avgpool_layer.cpp" />
+    <ClCompile Include="src\avgpool_layer_kernels_cl.cpp" />
+    <ClCompile Include="src\batchnorm_layer.cpp" />
+    <ClCompile Include="src\blas.cpp" />
+    <ClCompile Include="src\blas_kernels_cl.cpp" />
+    <ClCompile Include="src\box.cpp" />
+    <ClCompile Include="src\cl_warpper.cpp" />
+    <ClCompile Include="src\col2im.cpp" />
+    <ClCompile Include="src\col2im_kernels_cl.cpp" />
+    <ClCompile Include="src\connected_layer.cpp" />
+    <ClCompile Include="src\convolutional_kernels_cl.cpp" />
+    <ClCompile Include="src\convolutional_layer.cpp" />
+    <ClCompile Include="src\cost_layer.cpp" />
+    <ClCompile Include="src\crnn_layer.cpp" />
+    <ClCompile Include="src\crop_layer.cpp" />
+    <ClCompile Include="src\crop_layer_kernels_cl.cpp" />
+    <ClCompile Include="src\data.cpp" />
+    <ClCompile Include="src\deconvolutional_kernels_cl.cpp" />
+    <ClCompile Include="src\deconvolutional_layer.cpp" />
+    <ClCompile Include="src\demo.cpp" />
+    <ClCompile Include="src\detection_layer.cpp" />
+    <ClCompile Include="src\dropout_layer.cpp" />
+    <ClCompile Include="src\dropout_layer_kernels_cl.cpp" />
+    <ClCompile Include="src\gemm.cpp" />
+    <ClCompile Include="src\gru_layer.cpp" />
+    <ClCompile Include="src\im2col.cpp" />
+    <ClCompile Include="src\im2col_kernels_cl.cpp" />
+    <ClCompile Include="src\image.cpp" />
+    <ClCompile Include="src\layer.cpp" />
+    <ClCompile Include="src\list.cpp" />
+    <ClCompile Include="src\local_layer.cpp" />
+    <ClCompile Include="src\lstm_layer.cpp" />
+    <ClCompile Include="src\matrix.cpp" />
+    <ClCompile Include="src\maxpool_layer.cpp" />
+    <ClCompile Include="src\maxpool_layer_kernels_cl.cpp" />
+    <ClCompile Include="src\network.cpp" />
+    <ClCompile Include="src\normalization_layer.cpp" />
+    <ClCompile Include="src\ocl.cpp" />
+    <ClCompile Include="src\option_list.cpp" />
+    <ClCompile Include="src\parser.cpp" />
+    <ClCompile Include="src\region_layer.cpp" />
+    <ClCompile Include="src\reorg_layer.cpp" />
+    <ClCompile Include="src\rnn_layer.cpp" />
+    <ClCompile Include="src\route_layer.cpp" />
+    <ClCompile Include="src\shortcut_layer.cpp" />
+    <ClCompile Include="src\softmax_layer.cpp" />
+    <ClCompile Include="src\tree.cpp" />
+    <ClCompile Include="src\utils.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="include\cl_kernel_source.h" />
+    <ClInclude Include="include\darknet.h" />
+    <ClInclude Include="src\activations.h" />
+    <ClInclude Include="src\activation_layer.h" />
+    <ClInclude Include="src\avgpool_layer.h" />
+    <ClInclude Include="src\batchnorm_layer.h" />
+    <ClInclude Include="src\blas.h" />
+    <ClInclude Include="src\box.h" />
+    <ClInclude Include="src\classifier.h" />
+    <ClInclude Include="src\cl_warpper.h" />
+    <ClInclude Include="src\col2im.h" />
+    <ClInclude Include="src\connected_layer.h" />
+    <ClInclude Include="src\convolutional_layer.h" />
+    <ClInclude Include="src\cost_layer.h" />
+    <ClInclude Include="src\crnn_layer.h" />
+    <ClInclude Include="src\crop_layer.h" />
+    <ClInclude Include="src\data.h" />
+    <ClInclude Include="src\deconvolutional_layer.h" />
+    <ClInclude Include="src\demo.h" />
+    <ClInclude Include="src\detection_layer.h" />
+    <ClInclude Include="src\dropout_layer.h" />
+    <ClInclude Include="src\gemm.h" />
+    <ClInclude Include="src\gru_layer.h" />
+    <ClInclude Include="src\im2col.h" />
+    <ClInclude Include="src\image.h" />
+    <ClInclude Include="src\layer.h" />
+    <ClInclude Include="src\list.h" />
+    <ClInclude Include="src\local_layer.h" />
+    <ClInclude Include="src\lstm_layer.h" />
+    <ClInclude Include="src\matrix.h" />
+    <ClInclude Include="src\maxpool_layer.h" />
+    <ClInclude Include="src\network.h" />
+    <ClInclude Include="src\normalization_layer.h" />
+    <ClInclude Include="src\ocl.h" />
+    <ClInclude Include="src\option_list.h" />
+    <ClInclude Include="src\parser.h" />
+    <ClInclude Include="src\region_layer.h" />
+    <ClInclude Include="src\reorg_layer.h" />
+    <ClInclude Include="src\rnn_layer.h" />
+    <ClInclude Include="src\route_layer.h" />
+    <ClInclude Include="src\shortcut_layer.h" />
+    <ClInclude Include="src\softmax_layer.h" />
+    <ClInclude Include="src\stb_image.h" />
+    <ClInclude Include="src\stb_image_write.h" />
+    <ClInclude Include="src\tree.h" />
+    <ClInclude Include="src\utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="cl_kernels\activation_kernels.cl" />
+    <None Include="cl_kernels\avgpool_layer_kernels.cl" />
+    <None Include="cl_kernels\blas_kernels_1.cl" />
+    <None Include="cl_kernels\blas_kernels_2.cl" />
+    <None Include="cl_kernels\col2im_kernels.cl" />
+    <None Include="cl_kernels\convolutional_kernels.cl" />
+    <None Include="cl_kernels\crop_layer_kernels.cl" />
+    <None Include="cl_kernels\deconvolutional_kernels.cl" />
+    <None Include="cl_kernels\dropout_layer_kernels.cl" />
+    <None Include="cl_kernels\im2col_kernels.cl" />
+    <None Include="cl_kernels\maxpool_layer_kernels.cl" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

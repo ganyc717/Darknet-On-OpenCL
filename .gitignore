@@ -1,0 +1,12 @@
+.vs
+x86
+x64
+*.db
+*.opendb
+*.dll
+*.exp
+*.ilk
+*.lib
+*.pdb
+*.tlog
+*.obj
