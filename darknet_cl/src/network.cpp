@@ -80,7 +80,7 @@ void reset_network_state(network *net, int b)
     }
 }
 
-DLLAPI void reset_rnn(network *net)
+void reset_rnn(network *net)
 {
     reset_network_state(net, 0);
 }
@@ -509,7 +509,7 @@ box *make_boxes(network *net)
     return boxes;
 }
 
-DLLAPI float **make_probs(network *net)
+float **make_probs(network *net)
 {
     int j;
     layer l = net->layers[net->n-1];

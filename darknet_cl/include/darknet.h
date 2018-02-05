@@ -3,13 +3,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-//#include <time.h>
-//#include<Windows.h>
+
 #include <thread>
 #include <chrono>
 
 
-#define DLLAPI __declspec(dllexport)
 #define SECRET_NUM -1234
 extern int gpu_index;
 
@@ -62,7 +60,7 @@ typedef struct{
     char **names;
 } metadata;
 
-DLLAPI metadata get_metadata(char *file);
+metadata get_metadata(char *file);
 
 typedef struct{
     int *leaf;
@@ -586,7 +584,7 @@ typedef struct{
 } box_label;
 
 
-DLLAPI network *load_network(char *cfg, char *weights, int clear);
+network *load_network(char *cfg, char *weights, int clear);
 load_args get_base_args(network *net);
 
 void free_data(data d);
@@ -629,7 +627,7 @@ void fill_gpu(int N, float ALPHA, CLArray X, int INCX);
 void scal_gpu(int N, float ALPHA, CLArray X, int INCX);
 void copy_gpu(int N, CLArray X, int INCX, CLArray Y, int INCY);
 
-DLLAPI void cl_set_gpu(int n);
+void cl_set_gpu(int n);
 void cl_free(CLArray x_gpu);
 CLArray cl_make_array(float *x, size_t n);
 void cl_pull_array(CLArray x_gpu, float *x, size_t n);
@@ -650,7 +648,7 @@ void grayscale_image_3c(image im);
 void normalize_image(image p);
 void matrix_to_csv(matrix m);
 float train_network_sgd(network *net, data d, int n);
-DLLAPI void rgbgr_image(image im);
+void rgbgr_image(image im);
 data copy_data(data d);
 data concat_data(data d1, data d2);
 data load_cifar10_data(const char *filename);
@@ -687,10 +685,10 @@ void free_network(network *net);
 void set_batch_network(network *net, int b);
 void set_temp_network(network *net, float t);
 image load_image(char *filename, int w, int h, int c);
-DLLAPI image load_image_color(char *filename, int w, int h);
-DLLAPI image make_image(int w, int h, int c);
+image load_image_color(char *filename, int w, int h);
+image make_image(int w, int h, int c);
 image resize_image(image im, int w, int h);
-DLLAPI image letterbox_image(image im, int w, int h);
+image letterbox_image(image im, int w, int h);
 image crop_image(image im, int dx, int dy, int w, int h);
 image resize_min(image im, int min);
 image resize_max(image im, int max);
@@ -732,14 +730,14 @@ void draw_detections(image im, int num, float thresh, box *boxes, float **probs,
 matrix network_predict_data(network *net, data test);
 image **load_alphabet();
 image get_network_image(network *net);
-DLLAPI float *network_predict(network *net, float *input);
+float *network_predict(network *net, float *input);
 
-DLLAPI int network_width(network *net);
-DLLAPI int network_height(network *net);
-DLLAPI float *network_predict_image(network *net, image im);
-DLLAPI void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, box *boxes, float **probs);
-DLLAPI int num_boxes(network *net);
-DLLAPI box *make_boxes(network *net);
+int network_width(network *net);
+int network_height(network *net);
+float *network_predict_image(network *net, image im);
+void network_detect(network *net, image im, float thresh, float hier_thresh, float nms, box *boxes, float **probs);
+int num_boxes(network *net);
+box *make_boxes(network *net);
 
 void reset_network_state(network *net, int b);
 
@@ -754,7 +752,7 @@ matrix make_matrix(int rows, int cols);
 image get_image_from_stream(CvCapture *cap);
 #endif
 #endif
-DLLAPI void free_image(image m);
+void free_image(image m);
 float train_network(network *net, data d);
 std::thread load_data_in_thread(load_args args);
 void load_data_blocking(load_args args);
@@ -768,7 +766,7 @@ int find_arg(int argc, char* argv[], const char *arg);
 char *find_char_arg(int argc, char **argv, const char *arg, const char *def);
 char *basecfg(char *cfgfile);
 void find_replace(char *str, const char *orig, const char *rep, char *output);
-DLLAPI void free_ptrs(char **ptrs, int n);
+void free_ptrs(char **ptrs, int n);
 char *fgetl(FILE *fp);
 void strip(char *s);
 float sec(clock_t clocks);
