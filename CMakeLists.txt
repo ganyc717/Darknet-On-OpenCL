@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_CXX_FLAGS "-std=c++11 -O2 -DNDEBUG " )
 find_package(OpenCL)
 
 aux_source_directory(./darknet_cl/src DIR_LIB_SRC)
