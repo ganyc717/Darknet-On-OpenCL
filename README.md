@@ -16,7 +16,8 @@ Make sure you have OpenCL installed, and set environment variables OPENCL_SDK <b
 point to your OpenCL installed path.<br>
 `clBLAS`<br>
 clBLAS is equivalent to cuBLAS, you can find the source code [here](https://github.com/clMathLibraries/clBLAS)<br>
-I have prepared the binary library for Windows/Ubuntu x64 platform.<br>
+and compile it yourself.<br>
+or you can use binary library for Windows/Ubuntu x64 platform I have already provided<br>
 You can find clBLAS.lib/clBLAS.dll for Windows and libclBLAS.so for Linux <br>
 as well as header file [here](https://github.com/ganyc717/Darknet-On-OpenCL/tree/master/darknet_cl/clBLAS).<br>
 ## Build
@@ -24,9 +25,14 @@ as well as header file [here](https://github.com/ganyc717/Darknet-On-OpenCL/tree
 This project is prepared with Visual Studio 2017, just open darknet_cl.sln<br>
 and build it.<br>
 `Linux`<br>
-May provide Makefile later...<br>
+mkdir build && cd build<br>
+cmake ../<br>
+make<br>
 ## Usage
-Once you compiled and generate darknet_cl.exe, it has the same usage as darknet,
+Once you compiled this project, it has the same usage as darknet,<br>
 you can find it [here](https://pjreddie.com/darknet/).<br>
+If you compile the project depend on the clBLAS library I provided, you'd better<br>
+copy dependent library clBLAS.dll or libclBLAS.so to<br>
+system lib path.(C:\\Windows\\System32 or /usr/lib).<br>
 ## Attention
 This project didn't build the DarkGo into the darknet_cl, maybe support it later.<br>
