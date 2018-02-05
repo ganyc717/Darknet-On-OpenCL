@@ -663,7 +663,8 @@ network *parse_network_cfg(char *filename)
         fprintf(stderr, "%5d ", count);
         s = (section *)n->val;
         options = s->options;
-        layer l = {0};
+        layer l;
+        memset(&l,0,sizeof(layer));
         LAYER_TYPE lt = string_to_layer_type(s->type);
         if(lt == CONVOLUTIONAL){
             l = parse_convolutional(options, params);

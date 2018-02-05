@@ -54,10 +54,24 @@ CLArray &CLArray::operator-= (size_t offset)
 	return *this;
 }
 
-CLArray::CLArray() :major(0), buffer(0), origin(0), major_size(0), size(0) {};
-CLArray::CLArray(cl_mem major_mem, cl_mem mem, size_t major_mem_size, size_t origin_offset, size_t buf_size) 
-	:major(major_mem), buffer(mem), major_size(major_mem_size), origin(origin_offset), size(buf_size)
-{};
+CLArray::CLArray()
+{
+    major = 0;
+    buffer = 0;
+    origin = 0;
+    major_size = 0;
+    size = 0;
+};
+
+CLArray::CLArray(cl_mem major_mem, cl_mem mem, size_t major_mem_size, size_t origin_offset, size_t buf_size)
+{
+    major = major_mem;
+    buffer = mem;
+    major_size = major_mem_size;
+    origin = origin_offset;
+    size = buf_size;
+};
+
 CLArray::~CLArray()
 {};//Do nothing here, explicitly call cl_free to release cl_mem
 

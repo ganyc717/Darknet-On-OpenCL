@@ -452,7 +452,8 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
 
     int start = 0;
     int i, j, k;
-    layer imlayer = {0};
+    layer imlayer;
+    memset(&imlayer,0,sizeof(layer));
     for (i = 0; i < gnet->n; ++i) {
         if (gnet->layers[i].out_c == 3) {
             imlayer = gnet->layers[i];
@@ -631,7 +632,8 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
     network *anet = load_network(acfg, aweight, clear);
 
     int i, j, k;
-    layer imlayer = {0};
+    layer imlayer;
+    memset(&imlayer,0,sizeof(layer));
     for (i = 0; i < net->n; ++i) {
         if (net->layers[i].out_c == 3) {
             imlayer = net->layers[i];

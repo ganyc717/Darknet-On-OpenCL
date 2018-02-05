@@ -30,7 +30,8 @@ layer make_crnn_layer(int batch, int h, int w, int c, int hidden_filters, int ou
 {
     fprintf(stderr, "CRNN Layer: %d x %d x %d image, %d filters\n", h,w,c,output_filters);
     batch = batch / steps;
-    layer l = {0};
+    layer l;
+    memset(&l,0,sizeof(layer));
     l.batch = batch;
     l.type = CRNN;
     l.steps = steps;

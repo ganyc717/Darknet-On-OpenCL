@@ -12,7 +12,8 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
 {
     assert(inputs%groups == 0);
     fprintf(stderr, "softmax                                        %4d\n",  inputs);
-    softmax_layer l = {0};
+    softmax_layer l;
+    memset(&l,0,sizeof(softmax_layer));
     l.type = SOFTMAX;
     l.batch = batch;
     l.groups = groups;

@@ -19,7 +19,8 @@ static size_t get_workspace_size(layer l){
 layer make_deconvolutional_layer(int batch, int h, int w, int c, int n, int size, int stride, int padding, ACTIVATION activation, int batch_normalize, int adam)
 {
     int i;
-    layer l = {0};
+    layer l;
+    memset(&l,0,sizeof(layer));
     l.type = DECONVOLUTIONAL;
 
     l.h = h;

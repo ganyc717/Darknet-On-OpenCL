@@ -11,7 +11,8 @@
 
 layer make_activation_layer(int batch, int inputs, ACTIVATION activation)
 {
-	layer l = { 0 };
+    layer l;
+    memset(&l, 0, sizeof(layer));
     l.type = ACTIVE;
 
     l.inputs = inputs;

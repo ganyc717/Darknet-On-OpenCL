@@ -14,7 +14,8 @@
 layer make_connected_layer(int batch, int inputs, int outputs, ACTIVATION activation, int batch_normalize, int adam)
 {
     int i;
-    layer l = {0};
+    layer l;
+    memset(&l,0,sizeof(layer));
     l.learning_rate_scale = 1;
     l.type = CONNECTED;
 

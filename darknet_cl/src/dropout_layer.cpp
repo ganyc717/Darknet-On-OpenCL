@@ -6,7 +6,8 @@
 
 dropout_layer make_dropout_layer(int batch, int inputs, float probability)
 {
-    dropout_layer l = {0};
+    dropout_layer l;
+    memset(&l,0,sizeof(dropout_layer));
     l.type = DROPOUT;
     l.probability = probability;
     l.inputs = inputs;

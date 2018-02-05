@@ -16,7 +16,8 @@ void backward_crop_layer_gpu(const crop_layer l, network net){}
 crop_layer make_crop_layer(int batch, int h, int w, int c, int crop_height, int crop_width, int flip, float angle, float saturation, float exposure)
 {
     fprintf(stderr, "Crop Layer: %d x %d -> %d x %d x %d image\n", h,w,crop_height,crop_width,c);
-    crop_layer l = {0};
+    crop_layer l;
+    memset(&l,0,sizeof(crop_layer));
     l.type = CROP;
     l.batch = batch;
     l.h = h;

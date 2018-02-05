@@ -13,7 +13,8 @@
 
 detection_layer make_detection_layer(int batch, int inputs, int n, int side, int classes, int coords, int rescore)
 {
-    detection_layer l = {0};
+    detection_layer l;
+    memset(&l,0,sizeof(detection_layer));
     l.type = DETECTION;
 
     l.n = n;
