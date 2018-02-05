@@ -44,13 +44,11 @@ public:
 		return myostringstream.str();
 	}
 
-	void commonConstructor(cl_platform_id platform_id, cl_device_id device, bool verbose);
+	void commonConstructor(cl_platform_id platform_id, cl_device_id device);
 	CLWarpper(int gpu);
 	CLWarpper();
-	CLWarpper(int gpu, bool verbose);
-	CLWarpper(bool verbose);
 	CLWarpper(cl_platform_id platformId, cl_device_id deviceId);
-	CLWarpper(cl_platform_id platformId, cl_device_id deviceId, bool verbose);
+
 	virtual ~CLWarpper();
 
 	static int roundUp(int quantization, int minimum);
@@ -67,7 +65,7 @@ public:
 	static void checkError(cl_int error);
 
 	void gpu(int gpuIndex);
-	void init(int gpuIndex, bool verbose);
+	void init(int gpuIndex);
 	void finish();
 
 	int getComputeUnits();
@@ -79,7 +77,7 @@ public:
 	std::shared_ptr<CLProgram> buildProgramFromFile(std::string sourcefileName, std::string options);
 
 private:
-
+	static int instance_count;
 	static std::string getFileContents(std::string filename);
 	int64_t getDeviceInfoInt64(cl_device_info name);
 };

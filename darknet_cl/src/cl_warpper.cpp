@@ -1,28 +1,40 @@
 #ifdef GPU
 #include"cl_warpper.h"
 #include"cl_kernel_source.h"
-static int a = 0;
 
+int CLWarpper::instance_count = 0;
 
-CLWarpper::CLWarpper(int gpu, bool verbose) {
-	init(gpu, verbose);
-}
 CLWarpper::CLWarpper(int gpu) {
-	init(gpu, true);
+	init(gpu);
+	if (instance_count == 0)
+	{
+		instance_count++;
+		clblasSetup();
+	}
 }
-CLWarpper::CLWarpper(bool verbose) {
-	init(0, verbose);
-}
+
 CLWarpper::CLWarpper() {
-	init(0, true);
+	init(0);
+	if (instance_count == 0)
+	{
+		instance_count++;
+		clblasSetup();
+	}
 }
-CLWarpper::CLWarpper(cl_platform_id platform_id, cl_device_id device, bool verbose) {
-	commonConstructor(platform_id, device, verbose);
-}
+
 CLWarpper::CLWarpper(cl_platform_id platform_id, cl_device_id device) {
-	commonConstructor(platform_id, device, true);
+	commonConstructor(platform_id, device);
+	if (instance_count == 0)
+	{
+		instance_count++;
+		clblasSetup();
+	}
 }
+
 CLWarpper::~CLWarpper() {
+	instance_count--;
+	if (instance_count == 0)
+		clblasTeardown();
 	if (queue != 0) {
 		clReleaseCommandQueue(*queue);
 		delete queue;
@@ -32,7 +44,7 @@ CLWarpper::~CLWarpper() {
 		delete context;
 	}
 }
-void CLWarpper::init(int gpuIndex, bool verbose) {
+void CLWarpper::init(int gpuIndex) {
 
 	error = 0;
 	queue = 0;
@@ -79,7 +91,7 @@ void CLWarpper::init(int gpuIndex, bool verbose) {
 		throw std::runtime_error("Error creating OpenCL command queue, OpenCL errorcode: " + errorMessage(error));
 	}
 }
-void CLWarpper::commonConstructor(cl_platform_id platform_id, cl_device_id device, bool verbose)
+void CLWarpper::commonConstructor(cl_platform_id platform_id, cl_device_id device)
 {
 	queue = 0;
 	context = 0;
@@ -134,7 +146,7 @@ std::shared_ptr<CLWarpper> CLWarpper::createForIndexedGpu(int gpu) {
 		}
 
 		if ((gpu - currentGpuIndex) < (int)num_devices) {
-			return std::shared_ptr<CLWarpper>(new CLWarpper(platform_id, device_ids[(gpu - currentGpuIndex)], true));
+			return std::shared_ptr<CLWarpper>(new CLWarpper(platform_id, device_ids[(gpu - currentGpuIndex)]));
 		}
 		else {
 			currentGpuIndex += num_devices;
@@ -145,10 +157,6 @@ std::shared_ptr<CLWarpper> CLWarpper::createForIndexedGpu(int gpu) {
 	}
 	else {
 		throw std::runtime_error("Not enough OpenCL-enabled GPUs found to satisfy gpu index: " + toString(gpu));
-	}
-	if (a == 0)
-	{
-		clblasSetup();
 	}
 }
 std::shared_ptr<CLWarpper> CLWarpper::createForFirstGpu() {
@@ -226,7 +234,7 @@ void CLWarpper::gpu(int gpuIndex) {
 		delete context;
 	}
 
-	init(gpuIndex, this->verbose);
+	init(gpuIndex);
 }
 void CLWarpper::finish() {
 	error = clFinish(*queue);
