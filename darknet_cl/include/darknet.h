@@ -627,7 +627,7 @@ void fill_gpu(int N, float ALPHA, CLArray X, int INCX);
 void scal_gpu(int N, float ALPHA, CLArray X, int INCX);
 void copy_gpu(int N, CLArray X, int INCX, CLArray Y, int INCY);
 
-void cl_set_gpu(int n);
+void cl_set_device(int n);
 void cl_free(CLArray x_gpu);
 CLArray cl_make_array(float *x, size_t n);
 void cl_pull_array(CLArray x_gpu, float *x, size_t n);

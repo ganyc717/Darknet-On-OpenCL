@@ -76,7 +76,7 @@ CLArray::~CLArray()
 {};//Do nothing here, explicitly call cl_free to release cl_mem
 
 
-void cl_set_gpu(int n)
+void cl_set_device(int n)
 {
 	if (gpu_index == -1)
 	{

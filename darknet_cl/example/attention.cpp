@@ -67,7 +67,7 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
     for(i = 0; i < ngpus; ++i){
         srand(seed);
 #ifdef GPU
-        cl_set_gpu(gpus[i]);
+        cl_set_device(gpus[i]);
 #endif
         nets[i] = load_network(cfgfile, weightfile, clear);
         nets[i]->learning_rate *= ngpus;

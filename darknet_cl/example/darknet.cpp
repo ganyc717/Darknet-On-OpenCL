@@ -400,7 +400,7 @@ int main(int argc, char **argv)
     gpu_index = -1;
 #else
     if(gpu_index >= 0){
-        cl_set_gpu(gpu_index);
+        cl_set_device(gpu_index);
     }
 #endif
 

@@ -356,7 +356,7 @@ int resize_network(network *net, int w, int h)
 {
 #ifdef GPU
 	cl_free(net->workspace_gpu);
-    cl_set_gpu(net->gpu_index);
+    cl_set_device(net->gpu_index);
 #endif
     int i;
     //if(w == net->w && h == net->h) return 0;
@@ -715,7 +715,7 @@ float *network_output(network *net)
 void forward_network_gpu(network *netp)
 {
     network net = *netp;
-    cl_set_gpu(net.gpu_index);
+    cl_set_device(net.gpu_index);
     cl_push_array(net.input_gpu, net.input, net.inputs*net.batch);
     if(net.truth){
 		cl_push_array(net.truth_gpu, net.truth, net.truths*net.batch);
@@ -745,7 +745,7 @@ void backward_network_gpu(network *netp)
     int i;
     network net = *netp;
     network orig = net;
-    cl_set_gpu(net.gpu_index);
+    cl_set_device(net.gpu_index);
     for(i = net.n-1; i >= 0; --i){
         layer l = net.layers[i];
         if(l.stopbackward) break;
@@ -766,7 +766,7 @@ void backward_network_gpu(network *netp)
 void update_network_gpu(network *netp)
 {
     network net = *netp;
-    cl_set_gpu(net.gpu_index);
+    cl_set_device(net.gpu_index);
     int i;
     update_args a = {0};
     a.batch = net.batch*net.subdivisions;
@@ -791,7 +791,7 @@ void update_network_gpu(network *netp)
 void harmless_update_network_gpu(network *netp)
 {
     network net = *netp;
-    cl_set_gpu(net.gpu_index);
+    cl_set_device(net.gpu_index);
     int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
@@ -811,7 +811,7 @@ void train_thread(void* ptr)
 {
     train_args args = *(train_args*)ptr;
     free(ptr);
-    cl_set_gpu(args.net->gpu_index);
+    cl_set_device(args.net->gpu_index);
     *args.err = train_network(args.net, args.d);
 }
 
@@ -983,14 +983,14 @@ void sync_layer(network **nets, int n, int j)
     layer base = net->layers[j];
     scale_weights(base, 0);
     for (i = 0; i < n; ++i) {
-        cl_set_gpu(nets[i]->gpu_index);
+        cl_set_device(nets[i]->gpu_index);
         layer l = nets[i]->layers[j];
         pull_weights(l);
         merge_weights(l, base);
     }
     scale_weights(base, 1./n);
     for (i = 0; i < n; ++i) {
-        cl_set_gpu(nets[i]->gpu_index);
+        cl_set_device(nets[i]->gpu_index);
         layer l = nets[i]->layers[j];
         distribute_weights(l, base);
     }
