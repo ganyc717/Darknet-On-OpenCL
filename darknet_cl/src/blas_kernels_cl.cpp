@@ -1,3 +1,5 @@
+#ifdef GPU
+
 #include "ocl.h"
 #include "blas.h"
 #include "utils.h"
@@ -1018,3 +1020,4 @@ void softmax_gpu(CLArray input, int n, int batch, int batch_offset, int groups, 
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
 }
+#endif

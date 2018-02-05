@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "convolutional_layer.h"
 #include "batchnorm_layer.h"
 #include "gemm.h"
@@ -328,3 +329,4 @@ void update_convolutional_layer_gpu(layer l, update_args a)
 	}
 }
 
+#endif

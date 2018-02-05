@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "col2im.h"
 #include "ocl.h"
 const static std::string kernel_file = "col2im_kernels.cl";
@@ -36,3 +37,4 @@ void col2im_gpu(CLArray data_col,
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
 }
+#endif

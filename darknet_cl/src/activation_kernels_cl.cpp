@@ -1,3 +1,5 @@
+#ifdef GPU
+
 #include "ocl.h"
 #include "activations.h"
 
@@ -104,3 +106,4 @@ void gradient_array_gpu(CLArray x, int n, ACTIVATION a, CLArray delta)
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
 }
+#endif

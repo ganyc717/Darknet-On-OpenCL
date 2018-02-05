@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "convolutional_layer.h"
 #include "deconvolutional_layer.h"
 #include "batchnorm_layer.h"
@@ -142,3 +143,4 @@ void update_deconvolutional_layer_gpu(layer l, update_args a)
 	}
 }
 
+#endif

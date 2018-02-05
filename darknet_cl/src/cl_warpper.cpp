@@ -1,3 +1,4 @@
+#ifdef GPU
 #include"cl_warpper.h"
 #include"cl_kernel_source.h"
 static int a = 0;
@@ -366,3 +367,5 @@ CLProgram::~CLProgram()
 		clReleaseKernel(iter->second);
 	clReleaseProgram(program);
 }
+
+#endif

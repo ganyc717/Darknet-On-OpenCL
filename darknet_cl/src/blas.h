@@ -15,7 +15,7 @@ void deinter_cpu(int NX, float *X, int NY, float *Y, int B, float *OUT);
 void mult_add_into_cpu(int N, float *X, float *Y, float *Z);
 
 void const_cpu(int N, float ALPHA, float *X, int INCX);
-void constrain_gpu(int N, float ALPHA, CLArray X, int INCX);
+
 void pow_cpu(int N, float ALPHA, float *X, int INCX, float *Y, int INCY);
 void mul_cpu(int N, float *X, int INCX, float *Y, int INCY);
 
@@ -45,7 +45,7 @@ void softmax_cpu(float *input, int n, int batch, int batch_offset, int groups, i
 #ifdef GPU
 #include "ocl.h"
 #include "tree.h"
-
+void constrain_gpu(int N, float ALPHA, CLArray X, int INCX);
 void axpy_gpu(int N, float ALPHA, CLArray X, int INCX, CLArray Y, int INCY);
 void axpy_gpu_offset(int N, float ALPHA, CLArray X, int OFFX, int INCX, CLArray Y, int OFFY, int INCY);
 void copy_gpu(int N, CLArray X, int INCX, CLArray Y, int INCY);

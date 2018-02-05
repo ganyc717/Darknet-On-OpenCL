@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "im2col.h"
 #include "ocl.h"
 const static std::string kernel_file = "im2col_kernels.cl";
@@ -37,3 +38,4 @@ void im2col_gpu(CLArray im,
 }
 
 
+#endif

@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "crop_layer.h"
 #include "utils.h"
 #include "ocl.h"
@@ -74,3 +75,4 @@ void forward_crop_layer_gpu(crop_layer layer, network net)
 	cl->checkError(clWaitForEvents(1, &e2));
 	clReleaseEvent(e2);
 }
+#endif

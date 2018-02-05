@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "maxpool_layer.h"
 #include "ocl.h"
 
@@ -70,3 +71,4 @@ void backward_maxpool_layer_gpu(maxpool_layer layer, network net)
 }
 
 
+#endif

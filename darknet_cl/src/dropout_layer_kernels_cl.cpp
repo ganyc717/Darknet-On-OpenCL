@@ -1,3 +1,4 @@
+#ifdef GPU
 #include "dropout_layer.h"
 #include "ocl.h"
 #include "utils.h"
@@ -57,3 +58,4 @@ void backward_dropout_layer_gpu(dropout_layer layer, network net)
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
 }
+#endif

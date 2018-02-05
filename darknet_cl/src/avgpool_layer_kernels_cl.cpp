@@ -1,3 +1,5 @@
+#ifdef GPU
+
 #include "ocl.h"
 #include "avgpool_layer.h"
 const static std::string kernel_file = "avgpool_layer_kernels.cl";
@@ -55,3 +57,4 @@ void backward_avgpool_layer_gpu(avgpool_layer layer, network net)
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
 }
+#endif
