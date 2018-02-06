@@ -230,7 +230,6 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 	int i, j;
 	for (i = 0; i < l.batch; ++i) {
 		CLArray original_input_gpu = original_input + i * l.c*l.h*l.w;
-		CLArray delta_gpu = net.delta_gpu + i * l.c*l.h*l.w;
 
 		for (j = 0; j < l.groups; ++j) {
 			CLArray gpu_a = l.delta_gpu + (i*l.groups + j)*m*k;
@@ -266,9 +265,13 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 				}
 			}
 
-			if (l.xnor) gradient_array_gpu(original_input_gpu, l.c*l.h*l.w, HARDTAN, delta_gpu);
+			if (l.xnor)
+			{
+				CLArray delta_gpu = net.delta_gpu + i * l.c*l.h*l.w;
+				gradient_array_gpu(original_input_gpu, l.c*l.h*l.w, HARDTAN, delta_gpu);
+				cl_free(delta_gpu);
+			}
 			cl_free(original_input_gpu);
-			cl_free(delta_gpu);
 		}
 	}
 #endif
