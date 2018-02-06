@@ -42,17 +42,17 @@ private:
 #endif
 
 
-#ifndef __cplusplus
-    #ifdef OPENCV
-    #include "opencv2/highgui/highgui_c.h"
-    #include "opencv2/imgproc/imgproc_c.h"
-    #include "opencv2/core/version.hpp"
-    #if CV_MAJOR_VERSION == 3
-    #include "opencv2/videoio/videoio_c.h"
-    #include "opencv2/imgcodecs/imgcodecs_c.h"
-    #endif
-    #endif
+
+#ifdef OPENCV
+#include "opencv2/highgui/highgui_c.h"
+#include "opencv2/imgproc/imgproc_c.h"
+#include "opencv2/core/version.hpp"
+#if CV_MAJOR_VERSION == 3
+#include "opencv2/videoio/videoio_c.h"
+#include "opencv2/imgcodecs/imgcodecs_c.h"
 #endif
+#endif
+
 
 
 typedef struct{
@@ -747,11 +747,11 @@ void do_nms_obj(box *boxes, float **probs, int total, int classes, float thresh)
 
 matrix make_matrix(int rows, int cols);
 
-#ifndef __cplusplus
+
 #ifdef OPENCV
 image get_image_from_stream(CvCapture *cap);
 #endif
-#endif
+
 void free_image(image m);
 float train_network(network *net, data d);
 std::thread load_data_in_thread(load_args args);

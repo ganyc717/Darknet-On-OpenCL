@@ -36,9 +36,9 @@ static float **predictions;
 static int demo_index = 0;
 static int demo_done = 0;
 static float *avg;
-double demo_time;
+std::chrono::steady_clock::time_point demo_time;
 
-char *detect_in_thread(char *ptr)
+void detect_in_thread(void)
 {
     running = 1;
     float nms = .4;
@@ -68,25 +68,23 @@ char *detect_in_thread(char *ptr)
 
     demo_index = (demo_index + 1)%demo_frame;
     running = 0;
-    return 0;
 }
 
-char *fetch_in_thread(char *ptr)
+void fetch_in_thread()
 {
     int status = fill_image_from_stream(cap, buff[buff_index]);
     letterbox_image_into(buff[buff_index], net->w, net->h, buff_letter[buff_index]);
     if(status == 0) demo_done = 1;
-    return 0;
 }
 
-char *display_in_thread(char *ptr)
+void display_in_thread()
 {
     show_image_cv(buff[(buff_index + 1)%3], "Demo", ipl);
     int c = cvWaitKey(1);
     if (c != -1) c = c%256;
     if (c == 27) {
         demo_done = 1;
-        return 0;
+        return;
     } else if (c == 82) {
         demo_thresh += .02;
     } else if (c == 84) {
@@ -98,27 +96,27 @@ char *display_in_thread(char *ptr)
         demo_hier -= .02;
         if(demo_hier <= .0) demo_hier = .0;
     }
-    return 0;
+    return;
 }
 
-char *display_loop(char *ptr)
+void display_loop()
 {
     while(1){
-        display_in_thread(0);
+        display_in_thread();
     }
 }
 
-char *detect_loop(char *ptr)
+void detect_loop()
 {
     while(1){
-        detect_in_thread(0);
+        detect_in_thread();
     }
 }
 
 void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     demo_frame = avg_frames;
-    predictions = calloc(demo_frame, sizeof(float*));
+    predictions = (float**)calloc(demo_frame, sizeof(float*));
     image **alphabet = load_alphabet();
     demo_names = names;
     demo_alphabet = alphabet;
@@ -128,8 +126,8 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
     printf("Demo\n");
     net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
-    pthread_t detect_thread;
-    pthread_t fetch_thread;
+	std::thread detect_thread;
+	std::thread fetch_thread;
 
     srand(2222222);
 
@@ -186,19 +184,23 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
-        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+        //if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+        //if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+		fetch_thread = std::thread(fetch_in_thread);
+		detect_thread = std::thread(detect_in_thread);
         if(!prefix){
-            fps = 1./(what_time_is_it_now() - demo_time);
+            fps = 1./sec(what_time_is_it_now() , demo_time);
             demo_time = what_time_is_it_now();
-            display_in_thread(0);
+            display_in_thread();
         }else{
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name);
         }
-        pthread_join(fetch_thread, 0);
-        pthread_join(detect_thread, 0);
+        //pthread_join(fetch_thread, 0);
+        //pthread_join(detect_thread, 0);
+		fetch_thread.join();
+		detect_thread.join();
         ++count;
     }
 }
@@ -206,7 +208,7 @@ void demo(char *cfgfile, char *weightfile, float thresh, int cam_index, const ch
 void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float thresh, int cam_index, const char *filename, char **names, int classes, int delay, char *prefix, int avg_frames, float hier, int w, int h, int frames, int fullscreen)
 {
     demo_frame = avg_frames;
-    predictions = calloc(demo_frame, sizeof(float*));
+    predictions = (float**)calloc(demo_frame, sizeof(float*));
     image **alphabet = load_alphabet();
     demo_names = names;
     demo_alphabet = alphabet;
@@ -216,8 +218,8 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
     printf("Demo\n");
     net = load_network(cfg1, weight1, 0);
     set_batch_network(net, 1);
-    pthread_t detect_thread;
-    pthread_t fetch_thread;
+    std::thread detect_thread;
+	std::thread fetch_thread;
 
     srand(2222222);
 
@@ -274,19 +276,23 @@ void demo_compare(char *cfg1, char *weight1, char *cfg2, char *weight2, float th
 
     while(!demo_done){
         buff_index = (buff_index + 1) %3;
-        if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
-        if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+        //if(pthread_create(&fetch_thread, 0, fetch_in_thread, 0)) error("Thread creation failed");
+        //if(pthread_create(&detect_thread, 0, detect_in_thread, 0)) error("Thread creation failed");
+		fetch_thread = std::thread(fetch_in_thread);
+		detect_thread = std::thread(detect_in_thread);
         if(!prefix){
-            fps = 1./(what_time_is_it_now() - demo_time);
+            fps = 1./sec(what_time_is_it_now() , demo_time);
             demo_time = what_time_is_it_now();
-            display_in_thread(0);
+            display_in_thread();
         }else{
             char name[256];
             sprintf(name, "%s_%08d", prefix, count);
             save_image(buff[(buff_index + 1)%3], name);
         }
-        pthread_join(fetch_thread, 0);
-        pthread_join(detect_thread, 0);
+        //pthread_join(fetch_thread, 0);
+        //pthread_join(detect_thread, 0);
+		fetch_thread.join();
+		detect_thread.join();
         ++count;
     }
 }

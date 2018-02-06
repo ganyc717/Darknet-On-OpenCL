@@ -169,8 +169,8 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     float fps = 0;
 
     while(1){
-        struct timeval tval_before, tval_after, tval_result;
-        gettimeofday(&tval_before, NULL);
+		std::chrono::steady_clock::time_point start, end;
+		start = what_time_is_it_now();
 
         image in = get_image_from_stream(cap);
         image in_s = letterbox_image(in, net->w, net->h);
@@ -189,10 +189,9 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
 
         cvWaitKey(10);
 
-        gettimeofday(&tval_after, NULL);
-        timersub(&tval_after, &tval_before, &tval_result);
-        float curr = 1000000.f/((long int)tval_result.tv_usec);
-        fps = .9*fps + .1*curr;
+		end = what_time_is_it_now();
+		float curr = 1.0f / sec(end, start);
+		fps = .9*fps + .1*curr;
     }
 #endif
 }
