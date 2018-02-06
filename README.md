@@ -24,6 +24,9 @@ as well as header file [here](https://github.com/ganyc717/Darknet-On-OpenCL/tree
 `Windows`<br>
 This project is prepared with Visual Studio 2017, just open darknet_cl.sln<br>
 and build it.<br>
+To enable OpenCL, please set environment variables OPENCL_SDK first.<br>
+To enable OpenCV, please set environment variables OPENCV_INCLUDE_DIR<br>
+and OPENCV_LIB first.<br>
 `Linux`<br>
 mkdir build && cd build<br>
 cmake ../<br>
