@@ -210,12 +210,7 @@ void forward_local_layer_gpu(const local_layer l, network net)
             int k = l.size*l.size*l.c;
 
             gemm_gpu(0,0,m,n,k,1,a,k,b,locations,1,c,locations);
-			cl_free(a);
-			cl_free(b);
-			cl_free(c);
         }
-		cl_free(input);
-		cl_free(output);
     }
     activate_array_gpu(l.output_gpu, l.outputs*l.batch, l.activation);
 }
@@ -244,12 +239,9 @@ void backward_local_layer_gpu(local_layer l, network net)
             int k = 1;
 
             gemm_gpu(0,1,m,n,k,1,a,locations,b,locations,1,c,n);
-			cl_free(a);
-			cl_free(b);
-			cl_free(c);
         }
 
-        if(net.delta_gpu.buffer && net.delta_gpu.size > 0){
+        if(net.delta_gpu.ptr && net.delta_gpu.size > 0){
             for(j = 0; j < locations; ++j){ 
 				CLArray a = l.weights_gpu + j*l.size*l.size*l.c*l.n;
 				CLArray b = l.delta_gpu + i*l.outputs + j;
@@ -260,13 +252,10 @@ void backward_local_layer_gpu(local_layer l, network net)
                 int k = l.n;
 
                 gemm_gpu(1,0,m,n,k,1,a,m,b,locations,0,c,locations);
-				cl_free(a);
-				cl_free(b);
-				cl_free(c);
+
             }
 			CLArray output = net.delta_gpu + i * l.c*l.h*l.w;
             col2im_gpu(net.workspace_gpu, l.c,  l.h,  l.w,  l.size,  l.stride, l.pad, output);
-			cl_free(output);
         }
     }
 }

@@ -17,9 +17,9 @@ void binarize_gpu(CLArray x, int n, CLArray binary)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("binarize_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&binary.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, binary.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -38,10 +38,10 @@ void binarize_input_gpu(CLArray input, int n, int size, CLArray binary)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("binarize_input_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&input.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, input.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&binary.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, binary.ptr));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -60,10 +60,10 @@ void binarize_weights_gpu(CLArray weights, int n, int size, CLArray binary)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("binarize_weights_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&weights.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, weights.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&binary.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, binary.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -120,9 +120,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
 
 			im2col_gpu(input_gpu,l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, gpu_b);
 			gemm_gpu(0, 0, m, n, k, 1, gpu_a, k, gpu_b, n, 1, gpu_c, n);
-			cl_free(gpu_a);
-			cl_free(gpu_c);
-			cl_free(input_gpu);
 		}
 	}
 #endif
@@ -151,14 +148,14 @@ void smooth_layer(layer l, int size, float rate)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("smooth_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&l.output_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, l.output_gpu.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&l.w));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&l.h));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&l.c));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&size));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(float), (void*)&rate));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&l.delta_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 7, l.delta_gpu.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -240,11 +237,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 				l.size, l.stride, l.pad, gpu_b);
 			gemm_gpu(0, 1, m, n, k, 1, gpu_a, k, gpu_b, k, 1, gpu_c, n);
 
-			cl_free(gpu_a);
-			cl_free(gpu_c);
-			cl_free(im);
-
-			if (net.delta_gpu.size > 0 && net.delta_gpu.buffer) {
+			if (net.delta_gpu.size > 0 && net.delta_gpu.ptr) {
 				if (l.binary || l.xnor) swap_binary(&l);
 
 				CLArray a = l.weights_gpu + j * l.nweights / l.groups;
@@ -256,10 +249,6 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 				col2im_gpu(net.workspace_gpu, l.c / l.groups, l.h, l.w, l.size, l.stride,
 					l.pad, img);
 
-				cl_free(a);
-				cl_free(b);
-				cl_free(img);
-
 				if (l.binary || l.xnor) {
 					swap_binary(&l);
 				}
@@ -269,9 +258,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 			{
 				CLArray delta_gpu = net.delta_gpu + i * l.c*l.h*l.w;
 				gradient_array_gpu(original_input_gpu, l.c*l.h*l.w, HARDTAN, delta_gpu);
-				cl_free(delta_gpu);
 			}
-			cl_free(original_input_gpu);
 		}
 	}
 #endif
@@ -313,7 +300,7 @@ void update_convolutional_layer_gpu(layer l, update_args a)
 	if (a.adam) {
 		adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.nweights, batch, a.t);
 		adam_update_gpu(l.biases_gpu, l.bias_updates_gpu, l.bias_m_gpu, l.bias_v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.n, batch, a.t);
-		if (l.scales_gpu.buffer && l.scales_gpu.size > 0) {
+		if (l.scales_gpu.ptr && l.scales_gpu.size > 0) {
 			adam_update_gpu(l.scales_gpu, l.scale_updates_gpu, l.scale_m_gpu, l.scale_v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.n, batch, a.t);
 		}
 	}
@@ -325,7 +312,7 @@ void update_convolutional_layer_gpu(layer l, update_args a)
 		axpy_gpu(l.n, learning_rate / batch, l.bias_updates_gpu, 1, l.biases_gpu, 1);
 		scal_gpu(l.n, momentum, l.bias_updates_gpu, 1);
 
-		if (l.scales_gpu.buffer && l.scales_gpu.size > 0) {
+		if (l.scales_gpu.ptr && l.scales_gpu.size > 0) {
 			axpy_gpu(l.n, learning_rate / batch, l.scale_updates_gpu, 1, l.scales_gpu, 1);
 			scal_gpu(l.n, momentum, l.scale_updates_gpu, 1);
 		}

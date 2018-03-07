@@ -134,9 +134,6 @@ void forward_normalization_layer_gpu(const layer layer, network net)
             if(prev >= 0)      axpy_gpu(w*h, -layer.alpha, squared + w*h*prev, 1, norms + w*h*k, 1);
             if(next < layer.c) axpy_gpu(w*h,  layer.alpha, squared + w*h*next, 1, norms + w*h*k, 1);
         }
-		cl_free(squared);
-		cl_free(norms);
-		cl_free(input);
     }
     pow_gpu(w*h*c*layer.batch, -layer.beta, layer.norms_gpu, 1, layer.output_gpu, 1);
     mul_gpu(w*h*c*layer.batch, net.input_gpu, 1, layer.output_gpu, 1);

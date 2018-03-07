@@ -27,8 +27,8 @@ void forward_crop_layer_gpu(crop_layer layer, network net)
 	cl_kernel levels_image_kernel = program->getKernel("levels_image_kernel");
 	cl_kernel forward_crop_layer_kernel = program->getKernel("forward_crop_layer_kernel");
 
-	cl->checkError(clSetKernelArg(levels_image_kernel, 0, sizeof(cl_mem), (void*)&net.input_gpu.buffer));
-	cl->checkError(clSetKernelArg(levels_image_kernel, 1, sizeof(cl_mem), (void*)&layer.rand_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(levels_image_kernel, 0, net.input_gpu.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(levels_image_kernel, 1, layer.rand_gpu.ptr));
 	cl->checkError(clSetKernelArg(levels_image_kernel, 2, sizeof(int), (void*)&layer.batch));
 	cl->checkError(clSetKernelArg(levels_image_kernel, 3, sizeof(int), (void*)&layer.w));
 	cl->checkError(clSetKernelArg(levels_image_kernel, 4, sizeof(int), (void*)&layer.h));
@@ -48,8 +48,8 @@ void forward_crop_layer_gpu(crop_layer layer, network net)
 	cl_int error = clEnqueueNDRangeKernel(*cl->queue, levels_image_kernel, 3, NULL, global_size, NULL, NULL, NULL, &e1);
 	cl->checkError(error);
 
-	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 0, sizeof(cl_mem), (void*)&net.input_gpu.buffer));
-	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 1, sizeof(cl_mem), (void*)&layer.rand_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(forward_crop_layer_kernel, 0, net.input_gpu.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(forward_crop_layer_kernel, 1, layer.rand_gpu.ptr));
 	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 2, sizeof(int), (void*)&size));
 	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 3, sizeof(int), (void*)&layer.c));
 	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 4, sizeof(int), (void*)&layer.h));
@@ -59,7 +59,7 @@ void forward_crop_layer_gpu(crop_layer layer, network net)
 	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 8, sizeof(int), (void*)&net.train));
 	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 9, sizeof(int), (void*)&layer.flip));
 	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 10, sizeof(float), (void*)&radians));
-	cl->checkError(clSetKernelArg(forward_crop_layer_kernel, 11, sizeof(cl_mem), (void*)&layer.output_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(forward_crop_layer_kernel, 11, layer.output_gpu.ptr));
 
 	size = layer.batch*layer.c*layer.out_w*layer.out_h;
 	dim = cl_gridsize(size);

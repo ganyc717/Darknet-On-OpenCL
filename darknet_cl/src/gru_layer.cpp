@@ -322,7 +322,7 @@ void backward_gru_layer_gpu(layer l, network net)
     increment_layer(&wh, l.steps - 1);
 
     net.input_gpu += l.inputs*l.batch*(l.steps-1);
-    if(net.delta_gpu.buffer && net.delta_gpu.size > 0) net.delta_gpu += l.inputs*l.batch*(l.steps-1);
+    if(net.delta_gpu.ptr && net.delta_gpu.size > 0) net.delta_gpu += l.inputs*l.batch*(l.steps-1);
     l.output_gpu += l.outputs*l.batch*(l.steps-1);
     l.delta_gpu += l.outputs*l.batch*(l.steps-1);
     CLArray end_state = l.output_gpu;
@@ -367,7 +367,7 @@ void backward_gru_layer_gpu(layer l, network net)
         s.delta_gpu = l.forgot_delta_gpu;
 
         backward_connected_layer_gpu(wh, s);
-        if(prev_delta_gpu.buffer && prev_delta_gpu.size > 0) mult_add_into_gpu(l.outputs*l.batch, l.forgot_delta_gpu, l.r_gpu, prev_delta_gpu);
+        if(prev_delta_gpu.ptr && prev_delta_gpu.size > 0) mult_add_into_gpu(l.outputs*l.batch, l.forgot_delta_gpu, l.r_gpu, prev_delta_gpu);
         mult_add_into_gpu(l.outputs*l.batch, l.forgot_delta_gpu, l.state_gpu, ur.delta_gpu);
 
         gradient_array_gpu(l.r_gpu, l.outputs*l.batch, LOGISTIC, ur.delta_gpu);
@@ -391,7 +391,7 @@ void backward_gru_layer_gpu(layer l, network net)
 
 
         net.input_gpu -= l.inputs*l.batch;
-        if(net.delta_gpu.buffer && net.delta_gpu.size) net.delta_gpu -= l.inputs*l.batch;
+        if(net.delta_gpu.ptr && net.delta_gpu.size) net.delta_gpu -= l.inputs*l.batch;
         l.output_gpu -= l.outputs*l.batch;
         l.delta_gpu -= l.outputs*l.batch;
         increment_layer(&uz, -1);

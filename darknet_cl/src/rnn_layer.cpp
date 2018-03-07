@@ -277,7 +277,7 @@ void backward_rnn_layer_gpu(layer l, network net)
         backward_connected_layer_gpu(self_layer, s);
 
         s.input_gpu = net.input_gpu + i*l.inputs*l.batch;
-        if(net.delta_gpu.buffer && net.delta_gpu.size > 0) s.delta_gpu = net.delta_gpu + i*l.inputs*l.batch;
+        if(net.delta_gpu.ptr && net.delta_gpu.size > 0) s.delta_gpu = net.delta_gpu + i*l.inputs*l.batch;
         else s.delta_gpu = CLArray();
         backward_connected_layer_gpu(input_layer, s);
 

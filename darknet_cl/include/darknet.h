@@ -26,16 +26,15 @@ class CLArray
 {
 public:
 	CLArray();
-	CLArray(cl_mem major, cl_mem buffer, size_t major_size, size_t origin, size_t size);
+	CLArray(void* ptr, size_t major_size, size_t origin, size_t size);
 	~CLArray();
 	size_t size;
-	cl_mem buffer;
+	void* ptr;
 	friend CLArray operator+(CLArray, size_t);
 	friend CLArray operator-(CLArray, size_t);
 	CLArray &operator+= (size_t);
 	CLArray &operator-= (size_t);
 private:
-	cl_mem major;
 	size_t major_size;
 	size_t origin;
 };

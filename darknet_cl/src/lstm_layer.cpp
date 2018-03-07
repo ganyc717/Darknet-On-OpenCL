@@ -508,7 +508,7 @@ void backward_lstm_layer_gpu(layer l, network state)
     increment_layer(&uo, l.steps - 1);
 
     state.input_gpu += l.inputs*l.batch*(l.steps - 1);
-    if (state.delta_gpu.buffer && state.delta_gpu.size > 0) state.delta_gpu += l.inputs*l.batch*(l.steps - 1);
+    if (state.delta_gpu.ptr && state.delta_gpu.size > 0) state.delta_gpu += l.inputs*l.batch*(l.steps - 1);
 
     l.output_gpu += l.outputs*l.batch*(l.steps - 1);
     l.cell_gpu += l.outputs*l.batch*(l.steps - 1);
@@ -608,7 +608,7 @@ void backward_lstm_layer_gpu(layer l, network state)
         copy_gpu(l.outputs*l.batch, l.temp_gpu, 1, l.dc_gpu, 1);				
 
         state.input_gpu -= l.inputs*l.batch;
-        if (state.delta_gpu.buffer && state.delta_gpu.size > 0) state.delta_gpu -= l.inputs*l.batch;
+        if (state.delta_gpu.ptr && state.delta_gpu.size > 0) state.delta_gpu -= l.inputs*l.batch;
         l.output_gpu -= l.outputs*l.batch;
         l.cell_gpu -= l.outputs*l.batch;
         l.delta_gpu -= l.outputs*l.batch;

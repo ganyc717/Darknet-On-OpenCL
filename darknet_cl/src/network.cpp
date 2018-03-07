@@ -70,10 +70,10 @@ void reset_network_state(network *net, int b)
     for (i = 0; i < net->n; ++i) {
         #ifdef GPU
         layer l = net->layers[i];
-        if(l.state_gpu.buffer && l.state_gpu.size > 0){
+        if(l.state_gpu.ptr && l.state_gpu.size > 0){
             fill_gpu(l.outputs, 0, l.state_gpu + l.outputs*b, 1);
         }
-        if(l.h_gpu.buffer && l.h_gpu.size > 0){
+        if(l.h_gpu.ptr && l.h_gpu.size > 0){
             fill_gpu(l.outputs, 0, l.h_gpu + l.outputs*b, 1);
         }
         #endif
@@ -676,8 +676,8 @@ void free_network(network *net)
     if(net->input) free(net->input);
     if(net->truth) free(net->truth);
 #ifdef GPU
-    if(net->input_gpu.buffer) cl_free(net->input_gpu);
-    if(net->truth_gpu.buffer) cl_free(net->truth_gpu);
+    if(net->input_gpu.ptr) cl_free(net->input_gpu);
+    if(net->truth_gpu.ptr) cl_free(net->truth_gpu);
 #endif
     free(net);
 }
@@ -725,7 +725,7 @@ void forward_network_gpu(network *netp)
     for(i = 0; i < net.n; ++i){
         net.index = i;
         layer l = net.layers[i];
-        if(l.delta_gpu.buffer && l.delta_gpu.size > 0){
+        if(l.delta_gpu.ptr && l.delta_gpu.size > 0){
             fill_gpu(l.outputs * l.batch, 0, l.delta_gpu, 1);
         }
         l.forward_gpu(l, net);
@@ -795,9 +795,9 @@ void harmless_update_network_gpu(network *netp)
     int i;
     for(i = 0; i < net.n; ++i){
         layer l = net.layers[i];
-        if(l.weight_updates_gpu.buffer && l.weight_updates_gpu.size) fill_gpu(l.nweights, 0, l.weight_updates_gpu, 1);
-        if(l.bias_updates_gpu.buffer && l.bias_updates_gpu.size) fill_gpu(l.nbiases, 0, l.bias_updates_gpu, 1);
-        if(l.scale_updates_gpu.buffer && l.scale_updates_gpu.size) fill_gpu(l.nbiases, 0, l.scale_updates_gpu, 1);
+        if(l.weight_updates_gpu.ptr && l.weight_updates_gpu.size) fill_gpu(l.nweights, 0, l.weight_updates_gpu, 1);
+        if(l.bias_updates_gpu.ptr && l.bias_updates_gpu.size) fill_gpu(l.nbiases, 0, l.bias_updates_gpu, 1);
+        if(l.scale_updates_gpu.ptr && l.scale_updates_gpu.size) fill_gpu(l.nbiases, 0, l.scale_updates_gpu, 1);
     }
 }
 

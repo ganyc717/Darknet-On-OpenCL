@@ -18,8 +18,8 @@ void scale_bias_gpu(CLArray output, CLArray biases, int batch, int n, int size)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("scale_bias_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&output.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&biases.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, output.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, biases.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&size));
 
@@ -46,12 +46,12 @@ void backward_scale_gpu(CLArray x_norm, CLArray delta, int batch, int n, int siz
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("backward_scale_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x_norm.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x_norm.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, delta.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&scale_updates.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, scale_updates.ptr));
 
 	size_t global_size[] = { n,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
@@ -69,8 +69,8 @@ void add_bias_gpu(CLArray output, CLArray biases, int batch, int n, int size)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("add_bias_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&output.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&biases.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, output.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, biases.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&size));
@@ -96,8 +96,8 @@ void backward_bias_gpu(CLArray bias_updates, CLArray delta, int batch, int n, in
 	if (size == 1) {
 		cl_kernel kernel = program->getKernel("backward_bias_conn_kernel");
 
-		cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&bias_updates.buffer));
-		cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
+		cl->checkError(clSetKernelArgSVMPointer(kernel, 0, bias_updates.ptr));
+		cl->checkError(clSetKernelArgSVMPointer(kernel, 1, delta.ptr));
 		cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 		cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
 
@@ -110,8 +110,8 @@ void backward_bias_gpu(CLArray bias_updates, CLArray delta, int batch, int n, in
 	else {
 		cl_kernel kernel = program->getKernel("backward_bias_kernel");
 
-		cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&bias_updates.buffer));
-		cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
+		cl->checkError(clSetKernelArgSVMPointer(kernel, 0, bias_updates.ptr));
+		cl->checkError(clSetKernelArgSVMPointer(kernel, 1, delta.ptr));
 		cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 		cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
 		cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&size));
@@ -133,9 +133,9 @@ void adam_gpu(int n, CLArray x, CLArray m, CLArray v, float B1, float B2, float 
 	cl_kernel kernel = program->getKernel("adam_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&m.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&v.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, m.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, v.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&B1));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(float), (void*)&B1));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(float), (void*)&rate));
@@ -175,15 +175,15 @@ void normalize_delta_gpu(CLArray x, CLArray mean, CLArray variance, CLArray mean
 	cl_kernel kernel = program->getKernel("normalize_delta_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&variance.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&mean_delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&variance_delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, mean.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, variance.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, mean_delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, variance_delta.ptr));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 9, delta.ptr));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -202,12 +202,12 @@ void mean_delta_gpu(CLArray delta, CLArray variance, int batch, int filters, int
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mean_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&variance.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, variance.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&mean_delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, mean_delta.ptr));
 
 	dim2 dim = cl_gridsize(filters);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -226,12 +226,12 @@ void fast_mean_delta_gpu(CLArray delta, CLArray variance, int batch, int filters
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_mean_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&variance.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, variance.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&mean_delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, mean_delta.ptr));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
@@ -249,14 +249,14 @@ void fast_variance_delta_gpu(CLArray x, CLArray delta, CLArray mean, CLArray var
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_variance_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&variance.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, mean.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, variance.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&variance_delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 7, variance_delta.ptr));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
@@ -277,9 +277,9 @@ void normalize_gpu(CLArray x, CLArray mean, CLArray variance, int batch, int fil
 	cl_kernel kernel = program->getKernel("normalize_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&variance.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, mean.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, variance.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&spatial));
@@ -301,11 +301,11 @@ void fast_mean_gpu(CLArray x, int batch, int filters, int spatial, CLArray mean)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_mean_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&mean.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, mean.ptr));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
@@ -323,12 +323,12 @@ void fast_variance_gpu(CLArray x, CLArray mean, int batch, int filters, int spat
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_variance_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&mean.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, mean.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&variance.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, variance.ptr));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
@@ -346,11 +346,11 @@ void mean_gpu(CLArray x, int batch, int filters, int spatial, CLArray mean)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mean_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&mean.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, mean.ptr));
 
 	dim2 dim = cl_gridsize(filters);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -369,12 +369,12 @@ void variance_gpu(CLArray x, CLArray mean, int batch, int filters, int spatial, 
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("variance_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&mean.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, mean.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&variance.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, variance.ptr));
 
 	dim2 dim = cl_gridsize(filters);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -400,9 +400,9 @@ void pow_gpu(int N, float ALPHA, CLArray X, int INCX, CLArray Y, int INCY)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&Y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, Y.ptr));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&INCY));
 
 	dim2 dim = cl_gridsize(N);
@@ -424,10 +424,10 @@ void axpy_gpu_offset(int N, float ALPHA, CLArray X, int OFFX, int INCX, CLArray 
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&OFFX));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&Y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, Y.ptr));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&OFFY));
 	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&INCY));
 
@@ -454,9 +454,9 @@ void mul_gpu(int N, CLArray X, int INCX, CLArray Y, int INCY)
 	cl_kernel kernel = program->getKernel("mul_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&Y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, Y.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&INCY));
 
 	dim2 dim = cl_gridsize(N);
@@ -477,10 +477,10 @@ void copy_gpu_offset(int N, CLArray X, int OFFX, int INCX, CLArray Y, int OFFY, 
 	cl_kernel kernel = program->getKernel("copy_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&OFFX));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&Y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, Y.ptr));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&OFFY));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&INCY));
 
@@ -503,12 +503,12 @@ void flatten_gpu(CLArray x, int spatial, int layers, int batch, int forward, CLA
 	cl_kernel kernel = program->getKernel("flatten_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&spatial));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&layers));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&forward));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(cl_mem), (void*)&out.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 6, out.ptr));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -529,14 +529,14 @@ void reorg_gpu(CLArray x, int w, int h, int c, int batch, int stride, int forwar
 	cl_kernel kernel = program->getKernel("reorg_kernel");
 	
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&w));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&h));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&c));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
 	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&forward));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), (void*)&out.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 8, out.ptr));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -556,9 +556,9 @@ void scale_mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
 	cl_kernel kernel = program->getKernel("scale_mask_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(float), (void*)&mask_num));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, mask.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&scale));
 
 	dim2 dim = cl_gridsize(N);
@@ -579,9 +579,9 @@ void mask_gpu(int N, CLArray X, float mask_num, CLArray mask)
 	cl_kernel kernel = program->getKernel("mask_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(float), (void*)&mask_num));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, mask.ptr));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -602,7 +602,7 @@ void const_gpu(int N, float ALPHA, CLArray X, int INCX)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
 
 	dim2 dim = cl_gridsize(N);
@@ -624,7 +624,7 @@ void constrain_gpu(int N, float ALPHA, CLArray X, int INCX)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
 
 	dim2 dim = cl_gridsize(N);
@@ -646,7 +646,7 @@ void add_gpu(int N, float ALPHA, CLArray X, int INCX)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
 
 	dim2 dim = cl_gridsize(N);
@@ -668,7 +668,7 @@ void scal_gpu(int N, float ALPHA, CLArray X, int INCX)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
 
 	dim2 dim = cl_gridsize(N);
@@ -690,7 +690,7 @@ void supp_gpu(int N, float ALPHA, CLArray X, int INCX)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
 
 	dim2 work_size = cl_gridsize(N);
@@ -713,7 +713,7 @@ void fill_gpu(int N, float ALPHA, CLArray X, int INCX)
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
 
 	dim2 work_size = cl_gridsize(N);
@@ -756,11 +756,11 @@ void shortcut_gpu(int batch, int w1, int h1, int c1, CLArray add, int w2, int h2
 	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&w1));
 	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&h1));
 	cl->checkError(clSetKernelArg(kernel, 9, sizeof(int), (void*)&c1));
-	cl->checkError(clSetKernelArg(kernel, 10, sizeof(cl_mem), (void*)&add.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 10, add.ptr));
 	cl->checkError(clSetKernelArg(kernel, 11, sizeof(int), (void*)&w2));
 	cl->checkError(clSetKernelArg(kernel, 12, sizeof(int), (void*)&h2));
 	cl->checkError(clSetKernelArg(kernel, 13, sizeof(int), (void*)&c2));
-	cl->checkError(clSetKernelArg(kernel, 14, sizeof(cl_mem), (void*)&out.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 14, out.ptr));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -780,10 +780,10 @@ void smooth_l1_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray er
 	cl_kernel kernel = program->getKernel("smooth_l1_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, pred.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, truth.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, error.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -803,10 +803,10 @@ void l2_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
 	cl_kernel kernel = program->getKernel("l2_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, pred.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, truth.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, error.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -826,10 +826,10 @@ void l1_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
 	cl_kernel kernel = program->getKernel("l1_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, pred.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, truth.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, delta.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, error.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -849,11 +849,11 @@ void deinter_gpu(int NX, CLArray X, int NY, CLArray Y, int B, CLArray OUT_)
 	cl_kernel kernel = program_2->getKernel("deinter_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&NX));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&NY));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&Y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, Y.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&B));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&OUT_.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, OUT_.ptr));
 
 	dim2 dim = cl_gridsize((NX + NY)*B);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -873,11 +873,11 @@ void inter_gpu(int NX, CLArray X, int NY, CLArray Y, int B, CLArray OUT_)
 	cl_kernel kernel = program_2->getKernel("inter_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&NX));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, X.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&NY));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&Y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, Y.ptr));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&B));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&OUT_.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, OUT_.ptr));
 
 	dim2 dim = cl_gridsize((NX + NY)*B);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -897,10 +897,10 @@ void weighted_sum_gpu(CLArray a, CLArray b, CLArray s, int num, CLArray c)
 	cl_kernel kernel = program->getKernel("weighted_sum_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&a.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&b.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&s.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&c.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, a.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, b.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, s.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, c.ptr));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -920,13 +920,13 @@ void weighted_delta_gpu(CLArray a, CLArray b, CLArray s, CLArray da, CLArray db,
 	cl_kernel kernel = program_2->getKernel("weighted_delta_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&a.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&b.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&s.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&da.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&db.buffer));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(cl_mem), (void*)&ds.buffer));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&dc.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, a.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, b.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, s.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, da.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, db.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 6, ds.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 7, dc.ptr));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -946,9 +946,9 @@ void mult_add_into_gpu(int num, CLArray a, CLArray b, CLArray c)
 	cl_kernel kernel = program_2->getKernel("mult_add_into_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&a.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&b.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&c.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, a.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, b.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, c.ptr));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -972,15 +972,15 @@ void softmax_tree(CLArray input, int spatial, int batch, int stride, float temp,
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("softmax_tree_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&input.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, input.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&spatial));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&stride));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&temp));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&output.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, output.ptr));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&hier.groups));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&tree_groups_size.buffer));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), (void*)&tree_groups_offset.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 7, tree_groups_size.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 8, tree_groups_offset.ptr));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -1001,7 +1001,7 @@ void softmax_gpu(CLArray input, int n, int batch, int batch_offset, int groups, 
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("softmax_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&input.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, input.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&batch_offset));
@@ -1009,7 +1009,7 @@ void softmax_gpu(CLArray input, int n, int batch, int batch_offset, int groups, 
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&group_offset));
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
 	cl->checkError(clSetKernelArg(kernel, 7, sizeof(float), (void*)&temp));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), (void*)&output.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 8, output.ptr));
 
 	dim2 dim = cl_gridsize(batch*groups);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };

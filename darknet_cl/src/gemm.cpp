@@ -174,7 +174,7 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
 	float BETA,
 	CLArray C_gpu, int ldc)
 {
-	//cl_int status = clblasSetup();
+	cl_int status;// = clblasSetup();
 	//check_error(status);
 	std::shared_ptr<CLWarpper> cl = getCLWarpper();
 	cl_event e;
@@ -182,10 +182,18 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
 	clblasTranspose transA = (TA ? clblasTrans : clblasNoTrans);
 	clblasTranspose transB = (TB ? clblasTrans : clblasNoTrans);
 
+	check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_WRITE, A_gpu.ptr, A_gpu.size * sizeof(float), 0, NULL, NULL));
+	check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_WRITE, B_gpu.ptr, B_gpu.size * sizeof(float), 0, NULL, NULL));
+	check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_WRITE, C_gpu.ptr, C_gpu.size * sizeof(float), 0, NULL, NULL));
+	cl_mem A = clCreateBuffer(*(cl->context), CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, A_gpu.size * sizeof(float), A_gpu.ptr, &status);
+	cl_mem B = clCreateBuffer(*(cl->context), CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, B_gpu.size * sizeof(float), B_gpu.ptr, &status);
+	cl_mem C = clCreateBuffer(*(cl->context), CL_MEM_READ_WRITE | CL_MEM_USE_HOST_PTR, C_gpu.size * sizeof(float), C_gpu.ptr, &status);
+
+
 	clblasSgemm(
 		clblasColumnMajor,//Make column major the same with cublasSgemm
-		transB, transA, N, M, K, ALPHA, B_gpu.buffer, 0, ldb, A_gpu.buffer, 0, lda, BETA,
-		C_gpu.buffer, 0, ldc,
+		transB, transA, N, M, K, ALPHA, B, 0, ldb, A, 0, lda, BETA,
+		C, 0, ldc,
 		1,//cl_uint numCommandQueues,
 		cl->queue,//cl_command_queue *commandQueues,
 		0,//cl_uint numEventsInWaitList,
@@ -194,6 +202,20 @@ void gemm_gpu(int TA, int TB, int M, int N, int K, float ALPHA,
 	);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
+
+	clReleaseMemObject(A);
+	clReleaseMemObject(B);
+	clReleaseMemObject(C);
+
+	cl_event events[3];
+	clEnqueueSVMUnmap(*(cl->queue), A_gpu.ptr, 0, NULL, &events[0]);
+	clEnqueueSVMUnmap(*(cl->queue), B_gpu.ptr, 0, NULL, &events[1]);
+	clEnqueueSVMUnmap(*(cl->queue), C_gpu.ptr, 0, NULL, &events[2]);
+
+	clWaitForEvents(3, events);
+	clReleaseEvent(events[0]);
+	clReleaseEvent(events[1]);
+	clReleaseEvent(events[2]);
 	//clblasTeardown();
 }
 /*

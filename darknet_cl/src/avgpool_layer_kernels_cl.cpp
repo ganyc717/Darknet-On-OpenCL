@@ -19,8 +19,8 @@ void forward_avgpool_layer_gpu(avgpool_layer layer, network net)
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&layer.w));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&layer.h));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&layer.c));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&net.input_gpu.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&layer.output_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, net.input_gpu.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, layer.output_gpu.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -45,8 +45,8 @@ void backward_avgpool_layer_gpu(avgpool_layer layer, network net)
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&layer.w));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&layer.h));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&layer.c));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&net.delta_gpu.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&layer.delta_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, net.delta_gpu.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, layer.delta_gpu.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };

@@ -18,7 +18,7 @@ void im2col_gpu(CLArray im,
 	cl_kernel kernel = program->getKernel("im2col_gpu_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num_kernels));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&im.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, im.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&height));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&width));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&ksize));
@@ -26,7 +26,7 @@ void im2col_gpu(CLArray im,
 	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
 	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&height_col));
 	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&width_col));
-	cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&data_col.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 9, data_col.ptr));
 
 	size_t global_size[] = { (num_kernels + BLOCK - 1) / BLOCK,BLOCK };
 

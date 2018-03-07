@@ -272,7 +272,7 @@ void backward_crnn_layer_gpu(layer l, network net)
         copy_gpu(l.hidden*l.batch, self_layer.delta_gpu, 1, input_layer.delta_gpu, 1);
         if (i > 0 && l.shortcut) axpy_gpu(l.hidden*l.batch, 1, self_layer.delta_gpu, 1, self_layer.delta_gpu - l.hidden*l.batch, 1);
         s.input_gpu = net.input_gpu + i*l.inputs*l.batch;
-        if(net.delta_gpu.buffer && net.delta_gpu.size > 0) s.delta_gpu = net.delta_gpu + i*l.inputs*l.batch;
+        if(net.delta_gpu.ptr && net.delta_gpu.size > 0) s.delta_gpu = net.delta_gpu + i*l.inputs*l.batch;
         else s.delta_gpu = CLArray();
         backward_convolutional_layer_gpu(input_layer, s);
 

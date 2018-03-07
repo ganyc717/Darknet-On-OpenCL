@@ -17,9 +17,9 @@ void forward_dropout_layer_gpu(dropout_layer layer, network net)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("yoloswag420blazeit360noscope");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&net.input_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, net.input_gpu.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&layer.rand_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, layer.rand_gpu.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(float), (void*)&layer.probability));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&layer.scale));
 
@@ -35,7 +35,7 @@ void forward_dropout_layer_gpu(dropout_layer layer, network net)
 
 void backward_dropout_layer_gpu(dropout_layer layer, network net)
 {
-	if (!net.delta_gpu.buffer || net.delta_gpu.size <= 0) return;
+	if (!net.delta_gpu.ptr || net.delta_gpu.size <= 0) return;
 	int size = layer.inputs*layer.batch;
 
 	std::shared_ptr<CLWarpper> cl = getCLWarpper();
@@ -43,9 +43,9 @@ void backward_dropout_layer_gpu(dropout_layer layer, network net)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("yoloswag420blazeit360noscope");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&net.delta_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, net.delta_gpu.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&layer.rand_gpu.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 2, layer.rand_gpu.ptr));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(float), (void*)&layer.probability));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&layer.scale));
 

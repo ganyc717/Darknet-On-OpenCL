@@ -27,8 +27,6 @@ void forward_deconvolutional_layer_gpu(layer l, network net)
 
 		gemm_gpu(1, 0, m, n, k, 1, gpu_a, m, gpu_b, n, 0, gpu_c, n);
 		col2im_gpu(net.workspace_gpu, l.out_c, l.out_h, l.out_w, l.size, l.stride, l.pad, output_gpu);
-		cl_free(gpu_b);
-		cl_free(output_gpu);
 	}
 	if (l.batch_normalize) {
 		forward_batchnorm_layer_gpu(l, net);
@@ -68,10 +66,7 @@ void backward_deconvolutional_layer_gpu(layer l, network net)
 			l.size, l.stride, l.pad, gpu_b);
 		gemm_gpu(0, 1, m, n, k, 1, gpu_a, k, gpu_b, k, 1, gpu_c, n);
 
-		cl_free(gpu_a);
-		cl_free(delta_gpu);
-
-		if (net.delta_gpu.buffer && net.delta_gpu.size > 0) {
+		if (net.delta_gpu.ptr && net.delta_gpu.size > 0) {
 			int m = l.c;
 			int n = l.h*l.w;
 			int k = l.size*l.size*l.n;
@@ -81,7 +76,6 @@ void backward_deconvolutional_layer_gpu(layer l, network net)
 			CLArray gpu_c = net.delta_gpu + i * n*m;
 
 			gemm_gpu(0, 0, m, n, k, 1, gpu_a, k, gpu_b, n, 1, gpu_c, n);
-			cl_free(gpu_c);
 		}
 	}
 }
@@ -124,7 +118,7 @@ void update_deconvolutional_layer_gpu(layer l, update_args a)
 	if (a.adam) {
 		adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, size, batch, a.t);
 		adam_update_gpu(l.biases_gpu, l.bias_updates_gpu, l.bias_m_gpu, l.bias_v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.n, batch, a.t);
-		if (l.scales_gpu.buffer && l.scales_gpu.size > 0) {
+		if (l.scales_gpu.ptr && l.scales_gpu.size > 0) {
 			adam_update_gpu(l.scales_gpu, l.scale_updates_gpu, l.scale_m_gpu, l.scale_v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.n, batch, a.t);
 		}
 	}
@@ -136,7 +130,7 @@ void update_deconvolutional_layer_gpu(layer l, update_args a)
 		axpy_gpu(l.n, learning_rate / batch, l.bias_updates_gpu, 1, l.biases_gpu, 1);
 		scal_gpu(l.n, momentum, l.bias_updates_gpu, 1);
 
-		if (l.scales_gpu.buffer && l.scales_gpu.size > 0) {
+		if (l.scales_gpu.ptr && l.scales_gpu.size > 0) {
 			axpy_gpu(l.n, learning_rate / batch, l.scale_updates_gpu, 1, l.scales_gpu, 1);
 			scal_gpu(l.n, momentum, l.scale_updates_gpu, 1);
 		}

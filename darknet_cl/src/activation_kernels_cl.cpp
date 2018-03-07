@@ -17,12 +17,12 @@ void binary_gradient_array_gpu(CLArray x, CLArray dx, int n, int size, BINARY_AC
 	size_t t = n / 2;
 	int binary_activation = (int)a;
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&dx.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 1, dx.ptr));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&t));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&size));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&binary_activation));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 5, y.ptr));
 
 	dim2 dim = cl_gridsize(t);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -44,11 +44,11 @@ void binary_activate_array_gpu(CLArray x, int n, int size, BINARY_ACTIVATION a, 
 	size_t t = n / 2;
 	int binary_activation = (int)a;
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&t));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&size));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&binary_activation));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&y.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 4, y.ptr));
 
 	dim2 dim = cl_gridsize(t);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -69,7 +69,7 @@ void activate_array_gpu(CLArray x, int n, ACTIVATION a)
 
 	int activation = (int)a;
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&activation));
 
@@ -92,10 +92,10 @@ void gradient_array_gpu(CLArray x, int n, ACTIVATION a, CLArray delta)
 
 	int activation = (int)a;
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 0, x.ptr));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(ACTIVATION), (void*)&activation));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
+	cl->checkError(clSetKernelArgSVMPointer(kernel, 3, delta.ptr));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };

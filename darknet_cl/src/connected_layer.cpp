@@ -268,7 +268,7 @@ void update_connected_layer_gpu(layer l, update_args a)
     if(a.adam){
         adam_update_gpu(l.weights_gpu, l.weight_updates_gpu, l.m_gpu, l.v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.inputs*l.outputs, batch, a.t);
         adam_update_gpu(l.biases_gpu, l.bias_updates_gpu, l.bias_m_gpu, l.bias_v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.outputs, batch, a.t);
-        if(l.scales_gpu.buffer && l.scales_gpu.size > 0){
+        if(l.scales_gpu.ptr && l.scales_gpu.size > 0){
             adam_update_gpu(l.scales_gpu, l.scale_updates_gpu, l.scale_m_gpu, l.scale_v_gpu, a.B1, a.B2, a.eps, decay, learning_rate, l.outputs, batch, a.t);
         }
     }else{
@@ -332,6 +332,6 @@ void backward_connected_layer_gpu(layer l, network net)
     b = l.weights_gpu;
     c = net.delta_gpu;*/
 
-    if(net.delta_gpu.buffer && net.delta_gpu.size > 0) gemm_gpu(0,0,m,n,k,1, l.delta_gpu,k, l.weights_gpu,n,1, net.delta_gpu,n);
+    if(net.delta_gpu.ptr && net.delta_gpu.size > 0) gemm_gpu(0,0,m,n,k,1, l.delta_gpu,k, l.weights_gpu,n,1, net.delta_gpu,n);
 }
 #endif
