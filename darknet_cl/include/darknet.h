@@ -16,9 +16,10 @@ extern int gpu_index;
 	#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 	#include <CL/cl.h>
 	#include<clBLAS.h>
-    #ifdef CUDNN
-    #include "cudnn.h"
-    #endif
+
+	#ifndef CL_VERSION_2_0 || CL_VERSION_2_0 == 0
+	#error("Not support OpenCL 2.0\n")
+	#endif
 #endif
 
 #ifdef GPU

@@ -113,6 +113,8 @@ CLArray cl_make_array(float *x, size_t n)
 	size_t size = sizeof(float)*n;
 
 	x_gpu = clSVMAlloc(*(cl->context), CL_MEM_READ_WRITE, size, 0);
+	if (!x_gpu) throw std::runtime_error("OpenCL SVM malloc failed, didn't support this feature\n");
+
 	CLArray buf = CLArray(x_gpu, n, 0, n);
 	if (x) {
 		cl_event e;
@@ -127,7 +129,7 @@ CLArray cl_make_array(float *x, size_t n)
 	else {
 		fill_gpu(n, 0, buf, 1);
 	}
-	if (!x_gpu) throw std::runtime_error("opencl malloc failed\n");
+	
 	return buf;
 
 }
