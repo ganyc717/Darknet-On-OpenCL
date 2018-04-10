@@ -652,8 +652,11 @@ __kernel void weighted_sum_kernel(int n, __global float *a, __global float *b, _
 {\n\
 	int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
 		get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+	float m = 0.0;\n\
+	if(b != 0)\n\
+		m = b[i];\n\
 	if (i < n) {\n\
-		c[i] = s[i] * a[i] + (1 - s[i])*(b ? b[i] : 0);\n\
+		c[i] = s[i] * a[i] + (1 - s[i])*m;\n\
 	}\n\
 }\n\
 "; 
