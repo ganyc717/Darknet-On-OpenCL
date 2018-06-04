@@ -77,8 +77,9 @@ __kernel void adam_kernel(int N, __global float *x, __global float *m, __global 
 	int index = get_global_id(2) * get_global_size(0) * get_global_size(1) +
 		get_global_id(1) * get_global_size(0) + get_global_id(0);
     if (index >= N) return;
-    
-	x[index] = x[index] + (rate * sqrt(1.0 - pow(B2, t)) / (1.0 - pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));
+    float mhat = m[index] / (1.0 - pow(B1, t));
+    float vhat = v[index] / (1.0 - pow(B2, t));
+    x[index] = x[index] + rate * mhat / (sqrt(vhat) + eps);
 }
 __kernel void normalize_kernel(int N, __global float *x, __global float *mean, __global float *variance, int batch, int filters, int spatial)
 {
@@ -276,12 +277,6 @@ __kernel void fill_kernel(int N, float ALPHA, __global float *X, int INCX)
 	               + global_y * get_global_size(0) + global_x;
 	if(i < N) X[i*INCX] = ALPHA;
 }
-__kernel void mask_kernel(int n, __global float *x, float mask_num, __global float *mask)
-{
-    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +
-		get_global_id(1) * get_global_size(0) + get_global_id(0);
-    if(i < n && mask[i] == mask_num) x[i] = mask_num;
-}
 __kernel void copy_kernel(int N, __global float *X, int OFFX, int INCX, __global float *Y, int OFFY, int INCY)
 {
     int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +
@@ -360,13 +355,13 @@ __kernel void flatten_kernel(int N, __global float *x, int spatial, int layers, 
 	if (forward) out[i2] = x[i1];
 	else out[i1] = x[i2];
 }
-__kernel void scale_mask_kernel(int n, __global float *x, float mask_num, __global float *mask, float scale)
+__kernel void mask_kernel(int n, __global float *x, float mask_num, __global float *mask, float scale)
 {
 	int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +
 		get_global_id(1) * get_global_size(0) + get_global_id(0);
 	if (i < n && mask[i] == mask_num) x[i] *= scale;
 }
-__kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int samples, int batch, int w1, int h1, int c1, __global float *add, int w2, int h2, int c2, __global float *out)
+__kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int samples, int batch, int w1, int h1, int c1, __global float *add, int w2, int h2, int c2, float s1, float s2, __global float *out)
 {
 	int id = get_global_id(2) * get_global_size(0) * get_global_size(1) +
 		get_global_id(1) * get_global_size(0) + get_global_id(0);
@@ -380,7 +375,7 @@ __kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride
 	int b = id % batch;
 	int out_index = i * samples + w2 * (j*samples + h2 * (k + c2 * b));
 	int add_index = i * stride + w1 * (j*stride + h1 * (k + c1 * b));
-	out[out_index] += add[add_index];
+	out[out_index] = s1*out[out_index] + s2*add[add_index];
 }
 __kernel void smooth_l1_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)
 {

@@ -118,7 +118,10 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
 			CLArray gpu_c = l.output_gpu + (i*l.groups + j)*n*m;
 			CLArray input_gpu = net.input_gpu + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
 
-			im2col_gpu(input_gpu,l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, gpu_b);
+			if (l.size == 1)
+				gpu_b = input_gpu;
+			else
+				im2col_gpu(input_gpu,l.c / l.groups, l.h, l.w, l.size, l.stride, l.pad, gpu_b);
 			gemm_gpu(0, 0, m, n, k, 1, gpu_a, k, gpu_b, n, 1, gpu_c, n);
 			cl_free(gpu_a);
 			cl_free(gpu_c);
@@ -252,9 +255,12 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 				CLArray c = net.workspace_gpu;
 				CLArray img = net.delta_gpu + (i*l.groups + j)*l.c / l.groups*l.h*l.w;
 
+				if (l.size == 1)
+					c = img;
 				gemm_gpu(1, 0, n, k, m, 1, a, n, b, k, 0, c, k);
-				col2im_gpu(net.workspace_gpu, l.c / l.groups, l.h, l.w, l.size, l.stride,
-					l.pad, img);
+				if (l.size != 1)
+					col2im_gpu(net.workspace_gpu, l.c / l.groups, l.h, l.w, l.size, l.stride,
+						l.pad, img);
 
 				cl_free(a);
 				cl_free(b);
@@ -330,6 +336,8 @@ void update_convolutional_layer_gpu(layer l, update_args a)
 			scal_gpu(l.n, momentum, l.scale_updates_gpu, 1);
 		}
 	}
+	if(l.clip)
+		constrain_gpu(l.nweights, l.clip, l.weights_gpu, 1);
 }
 
 #endif
