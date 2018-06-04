@@ -144,6 +144,17 @@ __kernel void wgan_kernel(int n, __global float *pred, __global float *truth, __
         delta[i] = (truth[i] > 0) ? 1 : -1;
     }
 }
+void atomic_float_add(volatile __global float *addr, float v)
+{
+    volatile __global int *p = (volatile __global int *)addr;
+    int last_value;
+    float result;
+    do
+    {
+        last_value = *p;
+        result = v + as_float(last_value);
+    }while(atomic_cmpxchg(p, last_value, as_int(result)) != last_value);
+}
 __kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int batch, int stride, int forward, float scale, __global float *out)
 {
     int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +
@@ -162,5 +173,5 @@ __kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int
     int in_c = out_c;
     int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;
     if(forward) out[out_index] += scale * x[in_index];
-    else atomic_add(x+in_index, scale * out[out_index]);
+    else atomic_float_add(x+in_index, scale * out[out_index]);
 }

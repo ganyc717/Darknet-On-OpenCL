@@ -802,6 +802,17 @@ __kernel void wgan_kernel(int n, __global float *pred, __global float *truth, __
         delta[i] = (truth[i] > 0) ? 1 : -1;\n\
     }\n\
 }\n\
+void atomic_float_add(volatile __global float *addr, float v)\n\
+{\n\
+    volatile __global int *p = (volatile __global int *)addr;\n\
+    int last_value;\n\
+    float result;\n\
+    do\n\
+    {\n\
+        last_value = *p;\n\
+        result = v + as_float(last_value);\n\
+    }while(atomic_cmpxchg(p, last_value, as_int(result)) != last_value);\n\
+}\n\
 __kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int batch, int stride, int forward, float scale, __global float *out)\n\
 {\n\
     int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
@@ -820,7 +831,7 @@ __kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int
     int in_c = out_c;\n\
     int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;\n\
     if(forward) out[out_index] += scale * x[in_index];\n\
-    else atomic_add(x+in_index, scale * out[out_index]);\n\
+    else atomic_float_add(x+in_index, scale * out[out_index]);\n\
 }\n\
 "; 
 std::string col2im_kernels = "\n\
