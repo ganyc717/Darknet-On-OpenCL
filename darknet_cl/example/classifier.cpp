@@ -48,8 +48,8 @@ void train_classifier(char *datacfg, char *cfgfile, char *weightfile, int *gpus,
 	int tag = option_find_int_quiet(options, "tag", 0);
 	const char *label_list = option_find_str(options, "labels", "data/labels.list");
 	const char *train_list = option_find_str(options, "train", "data/train.list");
-	char *tree = option_find_str(options, "tree", 0);
-	if (tree) net->hierarchy = read_tree(tree);
+	const char *tree = option_find_str(options, "tree", 0);
+	if (tree) net->hierarchy = read_tree(const_cast<char*>(tree));
     int classes = option_find_int(options, "classes", 2);
 
 	char **labels = 0;
@@ -415,7 +415,7 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
             if(indexes[j] == category) avg_topk += 1;
         }
 
-        printf("%s, %d, %f, %f, \n", paths[i], class, pred[0], pred[1]);
+        printf("%s, %d, %f, %f, \n", paths[i], category, pred[0], pred[1]);
         printf("%d: top 1: %f, top %d: %f\n", i, avg_acc/(i+1), topk, avg_topk/(i+1));
     }
 }
@@ -1000,8 +1000,8 @@ void demo_classifier(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
 
     int top = option_find_int(options, "top", 1);
 
-    char *label_list = option_find_str(options, "labels", 0);
-    char *name_list = option_find_str(options, "names", label_list);
+    const char *label_list = option_find_str(options, "labels", 0);
+    const char *name_list = option_find_str(options, "names", label_list);
     char **names = get_labels(name_list);
 
     int *indexes = (int*)calloc(top, sizeof(int));

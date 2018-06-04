@@ -523,7 +523,7 @@ void set_network_alpha_beta(network *net, float alpha, float beta)
 void train_prog(char *cfg, char *weight, char *acfg, char *aweight, int clear, int display, char *train_images, int maxbatch)
 {
 #ifdef GPU
-    char *backup_directory = "/home/pjreddie/backup/";
+    const char *backup_directory = "/home/pjreddie/backup/";
     srand(time(0));
     char *base = basecfg(cfg);
     char *abase = basecfg(acfg);
@@ -551,17 +551,17 @@ void train_prog(char *cfg, char *weight, char *acfg, char *aweight, int clear, i
     args.type = CLASSIFICATION_DATA;
     args.threads=16;
     args.classes = 1;
-    char *ls[2] = {"imagenet", "zzzzzzzz"};
+    char *ls[2] = {const_cast<char*>("imagenet"), const_cast<char*>("zzzzzzzz")};
     args.labels = ls;
 
-    pthread_t load_thread = load_data_in_thread(args);
+    std::thread load_thread = load_data_in_thread(args);
     clock_t time;
     gnet->train = 1;
     anet->train = 1;
 
     int x_size = gnet->inputs*gnet->batch;
     int y_size = gnet->truths*gnet->batch;
-    float *imerror = cuda_make_array(0, y_size);
+    CLArray imerror = cl_make_array(0, y_size);
 
     float aloss_avg = -1;
 
@@ -579,7 +579,8 @@ void train_prog(char *cfg, char *weight, char *acfg, char *aweight, int clear, i
 
         i += 1;
         time=clock();
-        pthread_join(load_thread, 0);
+        //pthread_join(load_thread, 0);
+		load_thread.join();
         train = buffer;
 
         load_thread = load_data_in_thread(args);
@@ -771,7 +772,7 @@ void train_dcgan(char *cfg, char *weight, char *acfg, char *aweight, int clear, 
             //cl_push_array(gnet->truth_gpu, gnet->truth, y_size);
             *gnet->seen += gnet->batch;
             //forward_network_gpu(gnet);
-            forward_network(gnet)
+			forward_network(gnet);
 
             fill_gpu(imlayer.outputs*imlayer.batch, 0, imerror, 1);
             fill_cpu(anet->truths*anet->batch, 1, anet->truth, 1);

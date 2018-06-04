@@ -271,7 +271,7 @@ softmax_layer parse_softmax(list *options, size_params params)
     softmax_layer layer = make_softmax_layer(params.batch, params.inputs, groups);
     layer.temperature = option_find_float_quiet(options, "temperature", 1);
 	const char *tree_file = option_find_str(options, "tree", 0);
-    if (tree_file) layer.softmax_tree = read_tree(tree_file);
+    if (tree_file) layer.softmax_tree = read_tree(const_cast<char*>(tree_file));
     layer.w = params.w;
     layer.h = params.h;
     layer.c = params.c;
@@ -289,7 +289,7 @@ int *parse_yolo_mask(char *a, int *num)
         for(i = 0; i < len; ++i){
             if (a[i] == ',') ++n;
         }
-        mask = calloc(n, sizeof(int));
+        mask = (int*)calloc(n, sizeof(int));
         for(i = 0; i < n; ++i){
             int val = atoi(a);
             mask[i] = val;
@@ -306,8 +306,8 @@ layer parse_yolo(list *options, size_params params)
     int total = option_find_int(options, "num", 1);
     int num = total;
 
-    char *a = option_find_str(options, "mask", 0);
-    int *mask = parse_yolo_mask(a, &num);
+    const char *a = option_find_str(options, "mask", 0);
+    int *mask = parse_yolo_mask(const_cast<char*>(a), &num);
     layer l = make_yolo_layer(params.batch, params.w, params.h, num, total, mask, classes);
     assert(l.outputs == params.inputs);
 
@@ -318,7 +318,7 @@ layer parse_yolo(list *options, size_params params)
     l.truth_thresh = option_find_float(options, "truth_thresh", 1);
     l.random = option_find_int_quiet(options, "random", 0);
 
-    char *map_file = option_find_str(options, "map", 0);
+    const char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
 
     a = option_find_str(options, "anchors", 0);
@@ -369,7 +369,7 @@ layer parse_region(list *options, size_params params)
     l.bias_match = option_find_int_quiet(options, "bias_match",0);
 
 	const char *tree_file = option_find_str(options, "tree", 0);
-    if (tree_file) l.softmax_tree = read_tree(tree_file);
+    if (tree_file) l.softmax_tree = read_tree(const_cast<char*>(tree_file));
 	const char *map_file = option_find_str(options, "map", 0);
     if (map_file) l.map = read_map(map_file);
 

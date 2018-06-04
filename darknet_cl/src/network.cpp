@@ -532,11 +532,11 @@ detection *make_network_boxes(network *net, float thresh, int *num)
     int i;
     int nboxes = num_detections(net, thresh);
     if(num) *num = nboxes;
-    detection *dets = calloc(nboxes, sizeof(detection));
+    detection *dets = (detection *)calloc(nboxes, sizeof(detection));
     for(i = 0; i < nboxes; ++i){
-        dets[i].prob = calloc(l.classes, sizeof(float));
+        dets[i].prob = (float*)calloc(l.classes, sizeof(float));
         if(l.coords > 4){
-            dets[i].mask = calloc(l.coords-4, sizeof(float));
+            dets[i].mask = (float*)calloc(l.coords-4, sizeof(float));
         }
     }
     return dets;

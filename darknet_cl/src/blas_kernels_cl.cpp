@@ -1035,10 +1035,10 @@ void l2normalize_gpu(CLArray x, CLArray dx, int batch, int filters, int spatial)
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
 	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&dx.buffer));
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&filter));
+	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&filters));
 	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&spatial));
 
-	dim2 dim = cl_gridsize(num);
+	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
@@ -1060,7 +1060,7 @@ void scale_mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&scale));
 
-	dim2 dim = cl_gridsize(num);
+	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
@@ -1082,7 +1082,7 @@ void softmax_x_ent_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArra
 	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
 	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
 
-	dim2 dim = cl_gridsize(num);
+	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
@@ -1104,7 +1104,7 @@ void logistic_x_ent_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArr
         cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
         cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
 
-        dim2 dim = cl_gridsize(num);
+        dim2 dim = cl_gridsize(n);
         size_t global_size[] = { dim.x,dim.y,BLOCK };
 
         cl_event e;
@@ -1126,7 +1126,7 @@ void wgan_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
         cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
         cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
 
-        dim2 dim = cl_gridsize(num);
+        dim2 dim = cl_gridsize(n);
         size_t global_size[] = { dim.x,dim.y,BLOCK };
 
         cl_event e;
@@ -1142,7 +1142,7 @@ void upsample_gpu(CLArray in, int w, int h, int c, int batch, int stride, int fo
         if (program_2 == NULL)
         program_2 = cl->buildProgramFromFile(kernel_file_2, "");
         cl_kernel kernel = program_2->getKernel("upsample_kernel");
-	int size = w*h*c*batch*stride*stride;
+		int size = w*h*c*batch*stride*stride;
         cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
         cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&in.buffer));
         cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&w));
@@ -1154,7 +1154,7 @@ void upsample_gpu(CLArray in, int w, int h, int c, int batch, int stride, int fo
         cl->checkError(clSetKernelArg(kernel, 8, sizeof(float), (void*)&scale));
         cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&out.buffer));
 
-        dim2 dim = cl_gridsize(num);
+        dim2 dim = cl_gridsize(size);
         size_t global_size[] = { dim.x,dim.y,BLOCK };
 
         cl_event e;

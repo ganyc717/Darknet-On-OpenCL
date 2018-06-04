@@ -74,7 +74,7 @@ typedef struct{
     int *group_size;
     int *group_offset;
 } tree;
-tree *read_tree(char *filename);
+tree *read_tree(const char *filename);
 
 typedef enum{
     LOGISTIC, RELU, RELIE, LINEAR, RAMP, TANH, PLSE, LEAKY, ELU, LOGGY, STAIR, HARDTAN, LHTAN

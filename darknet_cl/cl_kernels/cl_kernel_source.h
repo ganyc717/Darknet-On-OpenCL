@@ -306,8 +306,9 @@ __kernel void adam_kernel(int N, __global float *x, __global float *m, __global 
 	int index = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
 		get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
     if (index >= N) return;\n\
-    \n\
-	x[index] = x[index] + (rate * sqrt(1.0 - pow(B2, t)) / (1.0 - pow(B1, t)) * m[index] / (sqrt(v[index]) + eps));\n\
+    float mhat = m[index] / (1.0 - pow(B1, t));\n\
+    float vhat = v[index] / (1.0 - pow(B2, t));\n\
+    x[index] = x[index] + rate * mhat / (sqrt(vhat) + eps);\n\
 }\n\
 __kernel void normalize_kernel(int N, __global float *x, __global float *mean, __global float *variance, int batch, int filters, int spatial)\n\
 {\n\
@@ -505,12 +506,6 @@ __kernel void fill_kernel(int N, float ALPHA, __global float *X, int INCX)\n\
 	               + global_y * get_global_size(0) + global_x;\n\
 	if(i < N) X[i*INCX] = ALPHA;\n\
 }\n\
-__kernel void mask_kernel(int n, __global float *x, float mask_num, __global float *mask)\n\
-{\n\
-    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
-		get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
-    if(i < n && mask[i] == mask_num) x[i] = mask_num;\n\
-}\n\
 __kernel void copy_kernel(int N, __global float *X, int OFFX, int INCX, __global float *Y, int OFFY, int INCY)\n\
 {\n\
     int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
@@ -589,13 +584,13 @@ __kernel void flatten_kernel(int N, __global float *x, int spatial, int layers, 
 	if (forward) out[i2] = x[i1];\n\
 	else out[i1] = x[i2];\n\
 }\n\
-__kernel void scale_mask_kernel(int n, __global float *x, float mask_num, __global float *mask, float scale)\n\
+__kernel void mask_kernel(int n, __global float *x, float mask_num, __global float *mask, float scale)\n\
 {\n\
 	int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
 		get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
 	if (i < n && mask[i] == mask_num) x[i] *= scale;\n\
 }\n\
-__kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int samples, int batch, int w1, int h1, int c1, __global float *add, int w2, int h2, int c2, __global float *out)\n\
+__kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride, int samples, int batch, int w1, int h1, int c1, __global float *add, int w2, int h2, int c2, float s1, float s2, __global float *out)\n\
 {\n\
 	int id = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
 		get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
@@ -609,7 +604,7 @@ __kernel void shortcut_kernel(int size, int minw, int minh, int minc, int stride
 	int b = id % batch;\n\
 	int out_index = i * samples + w2 * (j*samples + h2 * (k + c2 * b));\n\
 	int add_index = i * stride + w1 * (j*stride + h1 * (k + c1 * b));\n\
-	out[out_index] += add[add_index];\n\
+	out[out_index] = s1*out[out_index] + s2*add[add_index];\n\
 }\n\
 __kernel void smooth_l1_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)\n\
 {\n\
@@ -748,6 +743,84 @@ __kernel void softmax_kernel(__global float *input, int n, int batch, int batch_
 	int b = id / groups;\n\
 	int g = id % groups;\n\
 	softmax_device(input + b * batch_offset + g * group_offset, n, temp, stride, output + b * batch_offset + g * group_offset);\n\
+}\n\
+__kernel void l2norm_kernel(int N, __global float *x, __global float *dx, int batch, int filters, int spatial)\n\
+{\n\
+    int index = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
+                    get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+    if (index >= N) return;\n\
+    int b = index / spatial;\n\
+    int i = index % spatial;\n\
+    int f;\n\
+    float sum = 0;\n\
+    for(f = 0; f < filters; ++f){\n\
+        int index = b*filters*spatial + f*spatial + i;\n\
+        sum += pow(x[index], 2);\n\
+    }\n\
+    sum = sqrt(sum);\n\
+    if(sum == 0) sum = 1;\n\
+    for(f = 0; f < filters; ++f){\n\
+        int index = b*filters*spatial + f*spatial + i;\n\
+        x[index] /= sum;\n\
+        dx[index] = (1 - x[index]) / sum;\n\
+    }\n\
+}\n\
+__kernel void scale_mask_kernel(int n, __global float *x, float mask_num, __global float *mask, float scale)\n\
+{\n\
+    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
+                        get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+    if(i < n && mask[i] == mask_num) x[i] *= scale;\n\
+}\n\
+__kernel void softmax_x_ent_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)\n\
+{\n\
+    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
+                            get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+    if(i < n){\n\
+        float t = truth[i];\n\
+        float p = pred[i];\n\
+        error[i] = (t) ? -log(p) : 0;\n\
+        delta[i] = t-p;\n\
+    }\n\
+}\n\
+__kernel void logistic_x_ent_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)\n\
+{\n\
+    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
+                            get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+    if(i < n){\n\
+        float t = truth[i];\n\
+        float p = pred[i];\n\
+        error[i] = -t*log(p+.0000001) - (1-t)*log(1-p+.0000001);\n\
+        delta[i] = t-p;\n\
+    }\n\
+}\n\
+__kernel void wgan_kernel(int n, __global float *pred, __global float *truth, __global float *delta, __global float *error)\n\
+{\n\
+    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
+                                get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+    if(i < n){\n\
+        error[i] = truth[i] ? -pred[i] : pred[i];\n\
+        delta[i] = (truth[i] > 0) ? 1 : -1;\n\
+    }\n\
+}\n\
+__kernel void upsample_kernel(int N, __global float *x, int w, int h, int c, int batch, int stride, int forward, float scale, __global float *out)\n\
+{\n\
+    int i = get_global_id(2) * get_global_size(0) * get_global_size(1) +\n\
+                                    get_global_id(1) * get_global_size(0) + get_global_id(0);\n\
+    if(i >= N) return;\n\
+    int out_index = i;\n\
+    int out_w = i%(w*stride);\n\
+    i = i/(w*stride);\n\
+    int out_h = i%(h*stride);\n\
+    i = i/(h*stride);\n\
+    int out_c = i%c;\n\
+    i = i/c;\n\
+    int b = i%batch;\n\
+    int in_w = out_w / stride;\n\
+    int in_h = out_h / stride;\n\
+    int in_c = out_c;\n\
+    int in_index = b*w*h*c + in_c*w*h + in_h*w + in_w;\n\
+    if(forward) out[out_index] += scale * x[in_index];\n\
+    else atomic_add(x+in_index, scale * out[out_index]);\n\
 }\n\
 "; 
 std::string col2im_kernels = "\n\

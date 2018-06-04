@@ -47,14 +47,14 @@ void resize_shortcut_layer(layer *l, int w, int h)
     l->h = l->out_h = h;
     l->outputs = w*h*l->out_c;
     l->inputs = l->outputs;
-    l->delta =  realloc(l->delta, l->outputs*l->batch*sizeof(float));
-    l->output = realloc(l->output, l->outputs*l->batch*sizeof(float));
+    l->delta = (float*)realloc(l->delta, l->outputs*l->batch*sizeof(float));
+    l->output = (float*)realloc(l->output, l->outputs*l->batch*sizeof(float));
 
 #ifdef GPU
-    cuda_free(l->output_gpu);
-    cuda_free(l->delta_gpu);
-    l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
-    l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
+    cl_free(l->output_gpu);
+    cl_free(l->delta_gpu);
+    l->output_gpu  = cl_make_array(l->output, l->outputs*l->batch);
+    l->delta_gpu   = cl_make_array(l->delta,  l->outputs*l->batch);
 #endif
     
 }

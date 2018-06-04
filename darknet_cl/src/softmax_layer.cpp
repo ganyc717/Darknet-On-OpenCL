@@ -19,10 +19,10 @@ softmax_layer make_softmax_layer(int batch, int inputs, int groups)
     l.groups = groups;
     l.inputs = inputs;
     l.outputs = inputs;
-    l.loss = calloc(inputs*batch, sizeof(float));
+    l.loss = (float*)calloc(inputs*batch, sizeof(float));
     l.output = (float*)calloc(inputs*batch, sizeof(float));
     l.delta = (float*)calloc(inputs*batch, sizeof(float));
-    l.cost = calloc(1, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
 
     l.forward = forward_softmax_layer;
     l.backward = backward_softmax_layer;
@@ -95,7 +95,7 @@ void forward_softmax_layer_gpu(const softmax_layer l, network net)
             mask_gpu(l.batch*l.inputs, l.delta_gpu, SECRET_NUM, net.truth_gpu, 0);
             mask_gpu(l.batch*l.inputs, l.loss_gpu, SECRET_NUM, net.truth_gpu, 0);
         }
-        cuda_pull_array(l.loss_gpu, l.loss, l.batch*l.inputs);
+        cl_pull_array(l.loss_gpu, l.loss, l.batch*l.inputs);
         l.cost[0] = sum_array(l.loss, l.batch*l.inputs);
     }
 }

@@ -1,7 +1,7 @@
 #include "l2norm_layer.h"
 #include "activations.h"
 #include "blas.h"
-#include "cuda.h"
+#include "ocl.h"
 
 #include <float.h>
 #include <math.h>
@@ -17,9 +17,9 @@ layer make_l2norm_layer(int batch, int inputs)
     l.batch = batch;
     l.inputs = inputs;
     l.outputs = inputs;
-    l.output = calloc(inputs*batch, sizeof(float));
-    l.scales = calloc(inputs*batch, sizeof(float));
-    l.delta = calloc(inputs*batch, sizeof(float));
+    l.output = (float*)calloc(inputs*batch, sizeof(float));
+    l.scales = (float*)calloc(inputs*batch, sizeof(float));
+    l.delta = (float*)calloc(inputs*batch, sizeof(float));
 
     l.forward = forward_l2norm_layer;
     l.backward = backward_l2norm_layer;
@@ -27,9 +27,9 @@ layer make_l2norm_layer(int batch, int inputs)
     l.forward_gpu = forward_l2norm_layer_gpu;
     l.backward_gpu = backward_l2norm_layer_gpu;
 
-    l.output_gpu = cuda_make_array(l.output, inputs*batch); 
-    l.scales_gpu = cuda_make_array(l.output, inputs*batch); 
-    l.delta_gpu = cuda_make_array(l.delta, inputs*batch); 
+    l.output_gpu = cl_make_array(l.output, inputs*batch); 
+    l.scales_gpu = cl_make_array(l.output, inputs*batch); 
+    l.delta_gpu = cl_make_array(l.delta, inputs*batch); 
     #endif
     return l;
 }

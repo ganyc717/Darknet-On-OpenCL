@@ -2,7 +2,7 @@
 #include "activations.h"
 #include "blas.h"
 #include "box.h"
-#include "cuda.h"
+#include "ocl.h"
 #include "utils.h"
 
 #include <stdio.h>
@@ -26,21 +26,21 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.out_h = l.h;
     l.out_c = l.c;
     l.classes = classes;
-    l.cost = calloc(1, sizeof(float));
-    l.biases = calloc(total*2, sizeof(float));
+    l.cost = (float*)calloc(1, sizeof(float));
+    l.biases = (float*)calloc(total*2, sizeof(float));
     if(mask) l.mask = mask;
     else{
-        l.mask = calloc(n, sizeof(int));
+        l.mask = (int*)calloc(n, sizeof(int));
         for(i = 0; i < n; ++i){
             l.mask[i] = i;
         }
     }
-    l.bias_updates = calloc(n*2, sizeof(float));
+    l.bias_updates = (float*)calloc(n*2, sizeof(float));
     l.outputs = h*w*n*(classes + 4 + 1);
     l.inputs = l.outputs;
     l.truths = 90*(4 + 1);
-    l.delta = calloc(batch*l.outputs, sizeof(float));
-    l.output = calloc(batch*l.outputs, sizeof(float));
+    l.delta = (float*)calloc(batch*l.outputs, sizeof(float));
+    l.output = (float*)calloc(batch*l.outputs, sizeof(float));
     for(i = 0; i < total*2; ++i){
         l.biases[i] = .5;
     }
@@ -50,8 +50,8 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 #ifdef GPU
     l.forward_gpu = forward_yolo_layer_gpu;
     l.backward_gpu = backward_yolo_layer_gpu;
-    l.output_gpu = cuda_make_array(l.output, batch*l.outputs);
-    l.delta_gpu = cuda_make_array(l.delta, batch*l.outputs);
+    l.output_gpu = cl_make_array(l.output, batch*l.outputs);
+    l.delta_gpu = cl_make_array(l.delta, batch*l.outputs);
 #endif
 
     fprintf(stderr, "yolo\n");
@@ -68,15 +68,15 @@ void resize_yolo_layer(layer *l, int w, int h)
     l->outputs = h*w*l->n*(l->classes + 4 + 1);
     l->inputs = l->outputs;
 
-    l->output = realloc(l->output, l->batch*l->outputs*sizeof(float));
-    l->delta = realloc(l->delta, l->batch*l->outputs*sizeof(float));
+    l->output = (float*)realloc(l->output, l->batch*l->outputs*sizeof(float));
+    l->delta = (float*)realloc(l->delta, l->batch*l->outputs*sizeof(float));
 
 #ifdef GPU
-    cuda_free(l->delta_gpu);
-    cuda_free(l->output_gpu);
+    cl_free(l->delta_gpu);
+    cl_free(l->output_gpu);
 
-    l->delta_gpu =     cuda_make_array(l->delta, l->batch*l->outputs);
-    l->output_gpu =    cuda_make_array(l->output, l->batch*l->outputs);
+    l->delta_gpu =     cl_make_array(l->delta, l->batch*l->outputs);
+    l->output_gpu =    cl_make_array(l->output, l->batch*l->outputs);
 #endif
 }
 
@@ -108,17 +108,17 @@ float delta_yolo_box(box truth, float *x, float *biases, int n, int index, int i
 }
 
 
-void delta_yolo_class(float *output, float *delta, int index, int class, int classes, int stride, float *avg_cat)
+void delta_yolo_class(float *output, float *delta, int index, int category, int classes, int stride, float *avg_cat)
 {
     int n;
     if (delta[index]){
-        delta[index + stride*class] = 1 - output[index + stride*class];
-        if(avg_cat) *avg_cat += output[index + stride*class];
+        delta[index + stride* category] = 1 - output[index + stride* category];
+        if(avg_cat) *avg_cat += output[index + stride* category];
         return;
     }
     for(n = 0; n < classes; ++n){
-        delta[index + stride*n] = ((n == class)?1 : 0) - output[index + stride*n];
-        if(n == class && avg_cat) *avg_cat += output[index + stride*n];
+        delta[index + stride*n] = ((n == category)?1 : 0) - output[index + stride*n];
+        if(n == category && avg_cat) *avg_cat += output[index + stride*n];
     }
 }
 
@@ -182,10 +182,10 @@ void forward_yolo_layer(const layer l, network net)
                     if (best_iou > l.truth_thresh) {
                         l.delta[obj_index] = 1 - l.output[obj_index];
 
-                        int class = net.truth[best_t*(4 + 1) + b*l.truths + 4];
-                        if (l.map) class = l.map[class];
+                        int category = net.truth[best_t*(4 + 1) + b*l.truths + 4];
+                        if (l.map) category = l.map[category];
                         int class_index = entry_index(l, b, n*l.w*l.h + j*l.w + i, 4 + 1);
-                        delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, 0);
+                        delta_yolo_class(l.output, l.delta, class_index, category, l.classes, l.w*l.h, 0);
                         box truth = float_to_box(net.truth + best_t*(4 + 1) + b*l.truths, 1);
                         delta_yolo_box(truth, l.output, l.biases, l.mask[n], box_index, i, j, l.w, l.h, net.w, net.h, l.delta, (2-truth.w*truth.h), l.w*l.h);
                     }
@@ -222,10 +222,10 @@ void forward_yolo_layer(const layer l, network net)
                 avg_obj += l.output[obj_index];
                 l.delta[obj_index] = 1 - l.output[obj_index];
 
-                int class = net.truth[t*(4 + 1) + b*l.truths + 4];
-                if (l.map) class = l.map[class];
+                int category = net.truth[t*(4 + 1) + b*l.truths + 4];
+                if (l.map) category = l.map[category];
                 int class_index = entry_index(l, b, mask_n*l.w*l.h + j*l.w + i, 4 + 1);
-                delta_yolo_class(l.output, l.delta, class_index, class, l.classes, l.w*l.h, &avg_cat);
+                delta_yolo_class(l.output, l.delta, class_index, category, l.classes, l.w*l.h, &avg_cat);
 
                 ++count;
                 ++class_count;
@@ -357,13 +357,13 @@ void forward_yolo_layer_gpu(const layer l, network net)
         }
     }
     if(!net.train || l.onlyforward){
-        cuda_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
+        cl_pull_array(l.output_gpu, l.output, l.batch*l.outputs);
         return;
     }
 
-    cuda_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
+    cl_pull_array(l.output_gpu, net.input, l.batch*l.inputs);
     forward_yolo_layer(l, net);
-    cuda_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
+    cl_push_array(l.delta_gpu, l.delta, l.batch*l.outputs);
 }
 
 void backward_yolo_layer_gpu(const layer l, network net)

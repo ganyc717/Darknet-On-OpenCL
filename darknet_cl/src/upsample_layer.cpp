@@ -1,5 +1,5 @@
 #include "upsample_layer.h"
-#include "cuda.h"
+#include "ocl.h"
 #include "blas.h"
 
 #include <stdio.h>
@@ -24,8 +24,8 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
     l.stride = stride;
     l.outputs = l.out_w*l.out_h*l.out_c;
     l.inputs = l.w*l.h*l.c;
-    l.delta =  calloc(l.outputs*batch, sizeof(float));
-    l.output = calloc(l.outputs*batch, sizeof(float));;
+    l.delta =  (float*)calloc(l.outputs*batch, sizeof(float));
+    l.output = (float*)calloc(l.outputs*batch, sizeof(float));;
 
     l.forward = forward_upsample_layer;
     l.backward = backward_upsample_layer;
@@ -33,8 +33,8 @@ layer make_upsample_layer(int batch, int w, int h, int c, int stride)
     l.forward_gpu = forward_upsample_layer_gpu;
     l.backward_gpu = backward_upsample_layer_gpu;
 
-    l.delta_gpu =  cuda_make_array(l.delta, l.outputs*batch);
-    l.output_gpu = cuda_make_array(l.output, l.outputs*batch);
+    l.delta_gpu =  cl_make_array(l.delta, l.outputs*batch);
+    l.output_gpu = cl_make_array(l.output, l.outputs*batch);
     #endif
     if(l.reverse) fprintf(stderr, "downsample         %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
     else fprintf(stderr, "upsample           %2dx  %4d x%4d x%4d   ->  %4d x%4d x%4d\n", stride, w, h, c, l.out_w, l.out_h, l.out_c);
@@ -53,14 +53,14 @@ void resize_upsample_layer(layer *l, int w, int h)
     }
     l->outputs = l->out_w*l->out_h*l->out_c;
     l->inputs = l->h*l->w*l->c;
-    l->delta =  realloc(l->delta, l->outputs*l->batch*sizeof(float));
-    l->output = realloc(l->output, l->outputs*l->batch*sizeof(float));
+    l->delta = (float*)realloc(l->delta, l->outputs*l->batch*sizeof(float));
+    l->output = (float*)realloc(l->output, l->outputs*l->batch*sizeof(float));
 
 #ifdef GPU
-    cuda_free(l->output_gpu);
-    cuda_free(l->delta_gpu);
-    l->output_gpu  = cuda_make_array(l->output, l->outputs*l->batch);
-    l->delta_gpu   = cuda_make_array(l->delta,  l->outputs*l->batch);
+    cl_free(l->output_gpu);
+    cl_free(l->delta_gpu);
+    l->output_gpu  = cl_make_array(l->output, l->outputs*l->batch);
+    l->delta_gpu   = cl_make_array(l->delta,  l->outputs*l->batch);
 #endif
     
 }

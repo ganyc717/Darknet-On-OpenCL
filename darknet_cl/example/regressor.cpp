@@ -166,7 +166,7 @@ void demo_regressor(char *datacfg, char *cfgfile, char *weightfile, int cam_inde
     }
     list *options = read_data_cfg(datacfg);
     int classes = option_find_int(options, "classes", 1);
-    char *name_list = option_find_str(options, "names", 0);
+    const char *name_list = option_find_str(options, "names", 0);
     char **names = get_labels(name_list);
 
     if(!cap) error("Couldn't connect to webcam.\n");
