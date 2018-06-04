@@ -6,7 +6,7 @@
 const static std::string kernel_file = "blas_kernels_1.cl";
 static std::shared_ptr<CLProgram> program = NULL;
 
-//Fucking idiot Visual Studio compiler has limitaion on string size, so that I need to split this file into 2 parts
+//Visual Studio compiler has limitaion on string size, so that I need to split this file into 2 parts
 
 const static std::string kernel_file_2 = "blas_kernels_2.cl";
 static std::shared_ptr<CLProgram> program_2 = NULL;
@@ -548,12 +548,12 @@ void reorg_gpu(CLArray x, int w, int h, int c, int batch, int stride, int forwar
 	clReleaseEvent(e);
 }
 
-void scale_mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
+void mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
 {
 	std::shared_ptr<CLWarpper> cl = getCLWarpper();
 	if (program == NULL)
 		program = cl->buildProgramFromFile(kernel_file, "");
-	cl_kernel kernel = program->getKernel("scale_mask_kernel");
+	cl_kernel kernel = program->getKernel("mask_kernel");
 
 	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
 	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
@@ -727,7 +727,7 @@ void fill_gpu(int N, float ALPHA, CLArray X, int INCX)
 	clReleaseEvent(e);
 }
 
-void shortcut_gpu(int batch, int w1, int h1, int c1, CLArray add, int w2, int h2, int c2, CLArray out)
+void shortcut_gpu(int batch, int w1, int h1, int c1, CLArray add, int w2, int h2, int c2, float s1, float s2, CLArray out)
 {
 	int minw = (w1 < w2) ? w1 : w2;
 	int minh = (h1 < h2) ? h1 : h2;
@@ -760,7 +760,9 @@ void shortcut_gpu(int batch, int w1, int h1, int c1, CLArray add, int w2, int h2
 	cl->checkError(clSetKernelArg(kernel, 11, sizeof(int), (void*)&w2));
 	cl->checkError(clSetKernelArg(kernel, 12, sizeof(int), (void*)&h2));
 	cl->checkError(clSetKernelArg(kernel, 13, sizeof(int), (void*)&c2));
-	cl->checkError(clSetKernelArg(kernel, 14, sizeof(cl_mem), (void*)&out.buffer));
+	cl->checkError(clSetKernelArg(kernel, 14, sizeof(float), (void*)&s1));
+	cl->checkError(clSetKernelArg(kernel, 15, sizeof(float), (void*)&s2));
+	cl->checkError(clSetKernelArg(kernel, 16, sizeof(cl_mem), (void*)&out.buffer));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
@@ -1019,5 +1021,146 @@ void softmax_gpu(CLArray input, int n, int batch, int batch_offset, int groups, 
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
+}
+
+void l2normalize_gpu(CLArray x, CLArray dx, int batch, int filters, int spatial)
+{
+	std::shared_ptr<CLWarpper> cl = getCLWarpper();
+	if (program_2 == NULL)
+	program_2 = cl->buildProgramFromFile(kernel_file_2, "");
+	cl_kernel kernel = program_2->getKernel("l2normalize_gpu");
+
+	int N = batch*spatial;
+	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
+	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
+	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&dx.buffer));
+	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&batch));
+	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&filter));
+	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&spatial));
+
+	dim2 dim = cl_gridsize(num);
+	size_t global_size[] = { dim.x,dim.y,BLOCK };
+
+	cl_event e;
+	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl->checkError(status);
+	cl->checkError(clWaitForEvents(1, &e));
+	clReleaseEvent(e);
+}
+
+void scale_mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
+{
+	std::shared_ptr<CLWarpper> cl = getCLWarpper();
+	if (program_2 == NULL)
+	program_2 = cl->buildProgramFromFile(kernel_file_2, "");
+	cl_kernel kernel = program_2->getKernel("scale_mask_kernel");
+	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
+	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
+	cl->checkError(clSetKernelArg(kernel, 2, sizeof(float), (void*)&mask_num));
+	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
+	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&scale));
+
+	dim2 dim = cl_gridsize(num);
+	size_t global_size[] = { dim.x,dim.y,BLOCK };
+
+	cl_event e;
+	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl->checkError(status);
+	cl->checkError(clWaitForEvents(1, &e));
+	clReleaseEvent(e);
+}
+
+void softmax_x_ent_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
+{
+	std::shared_ptr<CLWarpper> cl = getCLWarpper();
+	if (program_2 == NULL)
+	program_2 = cl->buildProgramFromFile(kernel_file_2, "");
+	cl_kernel kernel = program_2->getKernel("softmax_x_ent_kernel");
+	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
+	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
+	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
+	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
+	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+
+	dim2 dim = cl_gridsize(num);
+	size_t global_size[] = { dim.x,dim.y,BLOCK };
+
+	cl_event e;
+	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl->checkError(status);
+	cl->checkError(clWaitForEvents(1, &e));
+	clReleaseEvent(e);
+}
+
+void logistic_x_ent_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
+{
+        std::shared_ptr<CLWarpper> cl = getCLWarpper();
+        if (program_2 == NULL)
+        program_2 = cl->buildProgramFromFile(kernel_file_2, "");
+        cl_kernel kernel = program_2->getKernel("logistic_x_ent_kernel");
+        cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
+        cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
+        cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
+        cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
+        cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+
+        dim2 dim = cl_gridsize(num);
+        size_t global_size[] = { dim.x,dim.y,BLOCK };
+
+        cl_event e;
+        cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+        cl->checkError(status);
+        cl->checkError(clWaitForEvents(1, &e));
+        clReleaseEvent(e);
+}
+
+void wgan_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
+{
+        std::shared_ptr<CLWarpper> cl = getCLWarpper();
+        if (program_2 == NULL)
+        program_2 = cl->buildProgramFromFile(kernel_file_2, "");
+        cl_kernel kernel = program_2->getKernel("wgan_kernel");
+        cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
+        cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
+        cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
+        cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
+        cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+
+        dim2 dim = cl_gridsize(num);
+        size_t global_size[] = { dim.x,dim.y,BLOCK };
+
+        cl_event e;
+        cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+        cl->checkError(status);
+        cl->checkError(clWaitForEvents(1, &e));
+        clReleaseEvent(e);
+}
+
+void upsample_gpu(CLArray in, int w, int h, int c, int batch, int stride, int forward, float scale, CLArray out)
+{
+        std::shared_ptr<CLWarpper> cl = getCLWarpper();
+        if (program_2 == NULL)
+        program_2 = cl->buildProgramFromFile(kernel_file_2, "");
+        cl_kernel kernel = program_2->getKernel("upsample_kernel");
+	int size = w*h*c*batch*stride*stride;
+        cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
+        cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&in.buffer));
+        cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&w));
+        cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&h));
+        cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&c));
+        cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&batch));
+        cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
+        cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&forward));
+        cl->checkError(clSetKernelArg(kernel, 8, sizeof(float), (void*)&scale));
+        cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&out.buffer));
+
+        dim2 dim = cl_gridsize(num);
+        size_t global_size[] = { dim.x,dim.y,BLOCK };
+
+        cl_event e;
+        cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+        cl->checkError(status);
+        cl->checkError(clWaitForEvents(1, &e));
+        clReleaseEvent(e);
 }
 #endif
