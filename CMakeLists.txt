@@ -28,4 +28,4 @@ include_directories(./darknet_cl/clBLAS)
 
 link_libraries(libpthread.so)
 
-add_executable(darknet_cl ${DIR_LIB_SRC} ${DIR_EXAMPLE_SRC})
+add_executable(darknet ${DIR_LIB_SRC} ${DIR_EXAMPLE_SRC})

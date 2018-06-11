@@ -12,7 +12,8 @@
 layer make_l2norm_layer(int batch, int inputs)
 {
     fprintf(stderr, "l2norm                                         %4d\n",  inputs);
-    layer l = {0};
+    layer l;
+    memset(&l, sizeof(layer), 0);
     l.type = L2NORM;
     l.batch = batch;
     l.inputs = inputs;

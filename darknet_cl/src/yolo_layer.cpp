@@ -13,7 +13,8 @@
 layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int classes)
 {
     int i;
-    layer l = {0};
+    layer l;
+    memset(&l, sizeof(layer), 0);
     l.type = YOLO;
 
     l.n = n;

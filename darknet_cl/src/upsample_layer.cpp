@@ -6,7 +6,8 @@
 
 layer make_upsample_layer(int batch, int w, int h, int c, int stride)
 {
-    layer l = {0};
+    layer l;
+    memset(&l, sizeof(layer), 0);
     l.type = UPSAMPLE;
     l.batch = batch;
     l.w = w;
