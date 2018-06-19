@@ -1,8 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 set(CMAKE_CXX_FLAGS "-std=c++11 -O2 -DNDEBUG " )
 
-set(OPENCV  ON)
-set(GPU     ON)
+set(OPENCV   ON)
+set(GPU      ON)
+set(BUILDLIB OFF)
 
 find_package(OpenCL)
 find_package(OpenCV)
@@ -28,4 +29,8 @@ include_directories(./darknet_cl/clBLAS)
 
 link_libraries(libpthread.so)
 
-add_executable(darknet ${DIR_LIB_SRC} ${DIR_EXAMPLE_SRC})
+if (BUILDLIB)
+	add_library(darknet SHARED ${DIR_LIB_SRC})
+else(BUILDLIB)
+	add_executable(darknet ${DIR_LIB_SRC} ${DIR_EXAMPLE_SRC})
+endif()
