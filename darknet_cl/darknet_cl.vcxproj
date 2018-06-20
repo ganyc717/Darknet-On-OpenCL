@@ -172,9 +172,11 @@
     <ClCompile Include="src\im2col.cpp" />
     <ClCompile Include="src\im2col_kernels_cl.cpp" />
     <ClCompile Include="src\image.cpp" />
+    <ClCompile Include="src\l2norm_layer.cpp" />
     <ClCompile Include="src\layer.cpp" />
     <ClCompile Include="src\list.cpp" />
     <ClCompile Include="src\local_layer.cpp" />
+    <ClCompile Include="src\logistic_layer.cpp" />
     <ClCompile Include="src\lstm_layer.cpp" />
     <ClCompile Include="src\matrix.cpp" />
     <ClCompile Include="src\maxpool_layer.cpp" />
@@ -191,7 +193,9 @@
     <ClCompile Include="src\shortcut_layer.cpp" />
     <ClCompile Include="src\softmax_layer.cpp" />
     <ClCompile Include="src\tree.cpp" />
+    <ClCompile Include="src\upsample_layer.cpp" />
     <ClCompile Include="src\utils.cpp" />
+    <ClCompile Include="src\yolo_layer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\cl_kernel_source.h" />
@@ -219,9 +223,11 @@
     <ClInclude Include="src\gru_layer.h" />
     <ClInclude Include="src\im2col.h" />
     <ClInclude Include="src\image.h" />
+    <ClInclude Include="src\l2norm_layer.h" />
     <ClInclude Include="src\layer.h" />
     <ClInclude Include="src\list.h" />
     <ClInclude Include="src\local_layer.h" />
+    <ClInclude Include="src\logistic_layer.h" />
     <ClInclude Include="src\lstm_layer.h" />
     <ClInclude Include="src\matrix.h" />
     <ClInclude Include="src\maxpool_layer.h" />
@@ -239,7 +245,9 @@
     <ClInclude Include="src\stb_image.h" />
     <ClInclude Include="src\stb_image_write.h" />
     <ClInclude Include="src\tree.h" />
+    <ClInclude Include="src\upsample_layer.h" />
     <ClInclude Include="src\utils.h" />
+    <ClInclude Include="src\yolo_layer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="cl_kernels\activation_kernels.cl" />
