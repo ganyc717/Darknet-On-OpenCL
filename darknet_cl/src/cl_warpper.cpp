@@ -376,4 +376,38 @@ CLProgram::~CLProgram()
 	clReleaseProgram(program);
 }
 
+CLKernel::CLKernel(cl_kernel kernel)
+{
+	this->kernel = kernel;
+	this->arg_index = 0;
+}
+
+cl_int CLKernel::setArgs(cl_mem* buffer)
+{
+	cl_int error = clSetKernelArg(kernel, arg_index, sizeof(cl_mem), (void*)buffer);
+	arg_index++;
+	return error;
+}
+
+cl_int CLKernel::setArgs(int* buffer)
+{
+	cl_int error = clSetKernelArg(kernel, arg_index, sizeof(int), (void*)buffer);
+	arg_index++;
+	return error;
+}
+
+cl_int CLKernel::setArgs(float* buffer)
+{
+	cl_int error = clSetKernelArg(kernel, arg_index, sizeof(float), (void*)buffer);
+	arg_index++;
+	return error;
+}
+
+cl_int CLKernel::run(cl_command_queue queue, cl_uint dimension, const size_t* offset, const size_t* global, const size_t* local, cl_uint wait_event_num, const cl_event* wait_events, cl_event* e)
+{
+	cl_int error = clEnqueueNDRangeKernel(queue, kernel, dimension, offset, global, local, wait_event_num, wait_events, e);
+	arg_index = 0;
+	return error;
+}
+
 #endif

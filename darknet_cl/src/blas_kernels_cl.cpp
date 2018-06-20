@@ -18,10 +18,11 @@ void scale_bias_gpu(CLArray output, CLArray biases, int batch, int n, int size)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("scale_bias_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&output.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&biases.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&size));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&output.buffer));
+	cl->checkError(clkernel.setArgs(&biases.buffer));
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&size));
 
 	size_t global_size[] = { BLOCK ,(size - 1) / BLOCK + 1 ,n };
 	cl_event* events = new cl_event[batch];
@@ -29,7 +30,7 @@ void scale_bias_gpu(CLArray output, CLArray biases, int batch, int n, int size)
 	for (int i = 0; i < batch; i++)
 	{
 		size_t offset[] = { 0,0,i * n };
-		cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, offset, global_size, NULL, NULL, NULL, &events[i]);
+		cl_int error = clkernel.run(*cl->queue, 3, offset, global_size, NULL, NULL, NULL, &events[i]);
 		cl->checkError(error);
 	}
 
@@ -46,17 +47,18 @@ void backward_scale_gpu(CLArray x_norm, CLArray delta, int batch, int n, int siz
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("backward_scale_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x_norm.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&scale_updates.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&x_norm.buffer));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&size));
+	cl->checkError(clkernel.setArgs(&scale_updates.buffer));
 
 	size_t global_size[] = { n,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, group_size, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, group_size, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -69,19 +71,19 @@ void add_bias_gpu(CLArray output, CLArray biases, int batch, int n, int size)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("add_bias_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&output.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&biases.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&size));
-
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&output.buffer));
+	cl->checkError(clkernel.setArgs(&biases.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&size));
 
 	int num = n * size*batch;
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -96,29 +98,31 @@ void backward_bias_gpu(CLArray bias_updates, CLArray delta, int batch, int n, in
 	if (size == 1) {
 		cl_kernel kernel = program->getKernel("backward_bias_conn_kernel");
 
-		cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&bias_updates.buffer));
-		cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
-		cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-		cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
+		CLKernel clkernel = CLKernel(kernel);
+		cl->checkError(clkernel.setArgs(&bias_updates.buffer));
+		cl->checkError(clkernel.setArgs(&delta.buffer));
+		cl->checkError(clkernel.setArgs(&batch));
+		cl->checkError(clkernel.setArgs(&n));
 
 		int num = n * size*batch;
 		dim2 dim = cl_gridsize(num);
 		size_t global_size[] = { dim.x,dim.y,BLOCK };
-		cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+		cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 		cl->checkError(error);
 	}
 	else {
 		cl_kernel kernel = program->getKernel("backward_bias_kernel");
 
-		cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&bias_updates.buffer));
-		cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
-		cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-		cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&n));
-		cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&size));
+		CLKernel clkernel = CLKernel(kernel);
+		cl->checkError(clkernel.setArgs(&bias_updates.buffer));
+		cl->checkError(clkernel.setArgs(&delta.buffer));
+		cl->checkError(clkernel.setArgs(&batch));
+		cl->checkError(clkernel.setArgs(&n));
+		cl->checkError(clkernel.setArgs(&size));
 
 		size_t global_size[] = { n,BLOCK };
 		size_t group_size[] = { 1,BLOCK };
-		cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, group_size, NULL, NULL, &e);
+		cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, group_size, NULL, NULL, &e);
 		cl->checkError(error);
 	}
 	cl->checkError(clWaitForEvents(1, &e));
@@ -132,20 +136,21 @@ void adam_gpu(int n, CLArray x, CLArray m, CLArray v, float B1, float B2, float 
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("adam_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&m.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&v.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&B1));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(float), (void*)&B1));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(float), (void*)&rate));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(float), (void*)&eps));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&t));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&m.buffer));
+	cl->checkError(clkernel.setArgs(&v.buffer));
+	cl->checkError(clkernel.setArgs(&B1));
+	cl->checkError(clkernel.setArgs(&B1));
+	cl->checkError(clkernel.setArgs(&rate));
+	cl->checkError(clkernel.setArgs(&eps));
+	cl->checkError(clkernel.setArgs(&t));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 
 	cl->checkError(clWaitForEvents(1, &e));
@@ -168,28 +173,29 @@ void adam_update_gpu(CLArray w, CLArray d, CLArray m, CLArray v, float B1, float
 
 void normalize_delta_gpu(CLArray x, CLArray mean, CLArray variance, CLArray mean_delta, CLArray variance_delta, int batch, int filters, int spatial, CLArray delta)
 {
-	size_t N = batch * filters*spatial;
+	int N = batch * filters*spatial;
 	std::shared_ptr<CLWarpper> cl = getCLWarpper();
 	if (program == NULL)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("normalize_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&variance.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&mean_delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&variance_delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&delta.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
+	cl->checkError(clkernel.setArgs(&mean_delta.buffer));
+	cl->checkError(clkernel.setArgs(&variance_delta.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -202,18 +208,19 @@ void mean_delta_gpu(CLArray delta, CLArray variance, int batch, int filters, int
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mean_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&variance.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&mean_delta.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&mean_delta.buffer));
 
 	dim2 dim = cl_gridsize(filters);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -226,17 +233,18 @@ void fast_mean_delta_gpu(CLArray delta, CLArray variance, int batch, int filters
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_mean_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&variance.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&mean_delta.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&mean_delta.buffer));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, group_size, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, group_size, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -249,19 +257,20 @@ void fast_variance_delta_gpu(CLArray x, CLArray delta, CLArray mean, CLArray var
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_variance_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&variance.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&variance_delta.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&variance_delta.buffer));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, group_size, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, group_size, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -269,26 +278,27 @@ void fast_variance_delta_gpu(CLArray x, CLArray delta, CLArray mean, CLArray var
 
 void normalize_gpu(CLArray x, CLArray mean, CLArray variance, int batch, int filters, int spatial)
 {
-	size_t N = batch * filters*spatial;
+	int N = batch * filters*spatial;
 
 	std::shared_ptr<CLWarpper> cl = getCLWarpper();
 	if (program == NULL)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("normalize_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&variance.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&spatial));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -301,16 +311,17 @@ void fast_mean_gpu(CLArray x, int batch, int filters, int spatial, CLArray mean)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_mean_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&mean.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, group_size, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, group_size, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -323,17 +334,18 @@ void fast_variance_gpu(CLArray x, CLArray mean, int batch, int filters, int spat
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fast_variance_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&variance.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
 
 	size_t global_size[] = { filters,BLOCK };
 	size_t group_size[] = { 1,BLOCK };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, group_size, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, group_size, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -346,17 +358,18 @@ void mean_gpu(CLArray x, int batch, int filters, int spatial, CLArray mean)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mean_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&mean.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
 
 	dim2 dim = cl_gridsize(filters);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -369,18 +382,19 @@ void variance_gpu(CLArray x, CLArray mean, int batch, int filters, int spatial, 
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("variance_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&mean.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&variance.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&mean.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&variance.buffer));
 
 	dim2 dim = cl_gridsize(filters);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -398,18 +412,19 @@ void pow_gpu(int N, float ALPHA, CLArray X, int INCX, CLArray Y, int INCY)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("pow_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&Y.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&INCY));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
+	cl->checkError(clkernel.setArgs(&Y.buffer));
+	cl->checkError(clkernel.setArgs(&INCY));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -422,20 +437,21 @@ void axpy_gpu_offset(int N, float ALPHA, CLArray X, int OFFX, int INCX, CLArray 
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("axpy_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&OFFX));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&Y.buffer));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&OFFY));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&INCY));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&OFFX));
+	cl->checkError(clkernel.setArgs(&INCX));
+	cl->checkError(clkernel.setArgs(&Y.buffer));
+	cl->checkError(clkernel.setArgs(&OFFY));
+	cl->checkError(clkernel.setArgs(&INCY));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -453,17 +469,18 @@ void mul_gpu(int N, CLArray X, int INCX, CLArray Y, int INCY)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mul_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&Y.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&INCY));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
+	cl->checkError(clkernel.setArgs(&Y.buffer));
+	cl->checkError(clkernel.setArgs(&INCY));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -476,19 +493,20 @@ void copy_gpu_offset(int N, CLArray X, int OFFX, int INCX, CLArray Y, int OFFY, 
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("copy_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&OFFX));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&Y.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&OFFY));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&INCY));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&OFFX));
+	cl->checkError(clkernel.setArgs(&INCX));
+	cl->checkError(clkernel.setArgs(&Y.buffer));
+	cl->checkError(clkernel.setArgs(&OFFY));
+	cl->checkError(clkernel.setArgs(&INCY));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -502,19 +520,20 @@ void flatten_gpu(CLArray x, int spatial, int layers, int batch, int forward, CLA
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("flatten_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&layers));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&forward));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(cl_mem), (void*)&out.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&size));
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&layers));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&forward));
+	cl->checkError(clkernel.setArgs(&out.buffer));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -528,21 +547,22 @@ void reorg_gpu(CLArray x, int w, int h, int c, int batch, int stride, int forwar
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("reorg_kernel");
 	
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&w));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&h));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&c));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&forward));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), (void*)&out.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&size));
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&w));
+	cl->checkError(clkernel.setArgs(&h));
+	cl->checkError(clkernel.setArgs(&c));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&stride));
+	cl->checkError(clkernel.setArgs(&forward));
+	cl->checkError(clkernel.setArgs(&out.buffer));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -555,17 +575,18 @@ void mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mask_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(float), (void*)&mask_num));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&scale));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&mask_num));
+	cl->checkError(clkernel.setArgs(&mask.buffer));
+	cl->checkError(clkernel.setArgs(&scale));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -578,16 +599,17 @@ void mask_gpu(int N, CLArray X, float mask_num, CLArray mask)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("mask_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(float), (void*)&mask_num));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&mask_num));
+	cl->checkError(clkernel.setArgs(&mask.buffer));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -600,16 +622,17 @@ void const_gpu(int N, float ALPHA, CLArray X, int INCX)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("const_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -622,16 +645,17 @@ void constrain_gpu(int N, float ALPHA, CLArray X, int INCX)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("constrain_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -644,16 +668,17 @@ void add_gpu(int N, float ALPHA, CLArray X, int INCX)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("add_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -666,16 +691,17 @@ void scal_gpu(int N, float ALPHA, CLArray X, int INCX)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("scal_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -688,16 +714,16 @@ void supp_gpu(int N, float ALPHA, CLArray X, int INCX)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("supp_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
 
 	dim2 work_size = cl_gridsize(N);
 	size_t global_size[] = { work_size.x,work_size.y,BLOCK };
-	size_t offset[] = { 0,0,0 };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, offset, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 
 	cl->checkError(clWaitForEvents(1, &e));
@@ -711,16 +737,16 @@ void fill_gpu(int N, float ALPHA, CLArray X, int INCX)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("fill_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(float), (void*)&ALPHA));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&INCX));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&ALPHA));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&INCX));
 
 	dim2 work_size = cl_gridsize(N);
 	size_t global_size[] = { work_size.x,work_size.y,BLOCK };
-	size_t offset[] = { 0,0,0 };
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, offset, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 
 	cl->checkError(clWaitForEvents(1, &e));
@@ -746,29 +772,30 @@ void shortcut_gpu(int batch, int w1, int h1, int c1, CLArray add, int w2, int h2
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("shortcut_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&minw));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&minh));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&minc));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&stride));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&sample));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&w1));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&h1));
-	cl->checkError(clSetKernelArg(kernel, 9, sizeof(int), (void*)&c1));
-	cl->checkError(clSetKernelArg(kernel, 10, sizeof(cl_mem), (void*)&add.buffer));
-	cl->checkError(clSetKernelArg(kernel, 11, sizeof(int), (void*)&w2));
-	cl->checkError(clSetKernelArg(kernel, 12, sizeof(int), (void*)&h2));
-	cl->checkError(clSetKernelArg(kernel, 13, sizeof(int), (void*)&c2));
-	cl->checkError(clSetKernelArg(kernel, 14, sizeof(float), (void*)&s1));
-	cl->checkError(clSetKernelArg(kernel, 15, sizeof(float), (void*)&s2));
-	cl->checkError(clSetKernelArg(kernel, 16, sizeof(cl_mem), (void*)&out.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&size));
+	cl->checkError(clkernel.setArgs(&minw));
+	cl->checkError(clkernel.setArgs(&minh));
+	cl->checkError(clkernel.setArgs(&minc));
+	cl->checkError(clkernel.setArgs(&stride));
+	cl->checkError(clkernel.setArgs(&sample));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&w1));
+	cl->checkError(clkernel.setArgs(&h1));
+	cl->checkError(clkernel.setArgs(&c1));
+	cl->checkError(clkernel.setArgs(&add.buffer));
+	cl->checkError(clkernel.setArgs(&w2));
+	cl->checkError(clkernel.setArgs(&h2));
+	cl->checkError(clkernel.setArgs(&c2));
+	cl->checkError(clkernel.setArgs(&s1));
+	cl->checkError(clkernel.setArgs(&s2));
+	cl->checkError(clkernel.setArgs(&out.buffer));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -781,17 +808,18 @@ void smooth_l1_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray er
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("smooth_l1_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&pred.buffer));
+	cl->checkError(clkernel.setArgs(&truth.buffer));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&error.buffer));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -804,17 +832,18 @@ void l2_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("l2_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&pred.buffer));
+	cl->checkError(clkernel.setArgs(&truth.buffer));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&error.buffer));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -827,17 +856,18 @@ void l1_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("l1_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&pred.buffer));
+	cl->checkError(clkernel.setArgs(&truth.buffer));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&error.buffer));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -850,18 +880,19 @@ void deinter_gpu(int NX, CLArray X, int NY, CLArray Y, int B, CLArray OUT_)
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("deinter_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&NX));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&NY));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&Y.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&B));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&OUT_.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&NX));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&NY));
+	cl->checkError(clkernel.setArgs(&Y.buffer));
+	cl->checkError(clkernel.setArgs(&B));
+	cl->checkError(clkernel.setArgs(&OUT_.buffer));
 
 	dim2 dim = cl_gridsize((NX + NY)*B);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -874,18 +905,19 @@ void inter_gpu(int NX, CLArray X, int NY, CLArray Y, int B, CLArray OUT_)
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("inter_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&NX));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&NY));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&Y.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&B));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&OUT_.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&NX));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&NY));
+	cl->checkError(clkernel.setArgs(&Y.buffer));
+	cl->checkError(clkernel.setArgs(&B));
+	cl->checkError(clkernel.setArgs(&OUT_.buffer));
 
 	dim2 dim = cl_gridsize((NX + NY)*B);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -898,17 +930,18 @@ void weighted_sum_gpu(CLArray a, CLArray b, CLArray s, int num, CLArray c)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("weighted_sum_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&a.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&b.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&s.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&c.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&num));
+	cl->checkError(clkernel.setArgs(&a.buffer));
+	cl->checkError(clkernel.setArgs(&b.buffer));
+	cl->checkError(clkernel.setArgs(&s.buffer));
+	cl->checkError(clkernel.setArgs(&c.buffer));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -921,20 +954,21 @@ void weighted_delta_gpu(CLArray a, CLArray b, CLArray s, CLArray da, CLArray db,
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("weighted_delta_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&a.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&b.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&s.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&da.buffer));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&db.buffer));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(cl_mem), (void*)&ds.buffer));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&dc.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&num));
+	cl->checkError(clkernel.setArgs(&a.buffer));
+	cl->checkError(clkernel.setArgs(&b.buffer));
+	cl->checkError(clkernel.setArgs(&s.buffer));
+	cl->checkError(clkernel.setArgs(&da.buffer));
+	cl->checkError(clkernel.setArgs(&db.buffer));
+	cl->checkError(clkernel.setArgs(&ds.buffer));
+	cl->checkError(clkernel.setArgs(&dc.buffer));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -947,16 +981,17 @@ void mult_add_into_gpu(int num, CLArray a, CLArray b, CLArray c)
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("mult_add_into_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&a.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&b.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&c.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&num));
+	cl->checkError(clkernel.setArgs(&a.buffer));
+	cl->checkError(clkernel.setArgs(&b.buffer));
+	cl->checkError(clkernel.setArgs(&c.buffer));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -974,21 +1009,22 @@ void softmax_tree(CLArray input, int spatial, int batch, int stride, float temp,
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("softmax_tree_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&input.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&spatial));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&stride));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&temp));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(cl_mem), (void*)&output.buffer));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&hier.groups));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(cl_mem), (void*)&tree_groups_size.buffer));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), (void*)&tree_groups_offset.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&input.buffer));
+	cl->checkError(clkernel.setArgs(&spatial));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&stride));
+	cl->checkError(clkernel.setArgs(&temp));
+	cl->checkError(clkernel.setArgs(&output.buffer));
+	cl->checkError(clkernel.setArgs(&hier.groups));
+	cl->checkError(clkernel.setArgs(&tree_groups_size.buffer));
+	cl->checkError(clkernel.setArgs(&tree_groups_offset.buffer));
 
 	dim2 dim = cl_gridsize(num);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -1003,21 +1039,22 @@ void softmax_gpu(CLArray input, int n, int batch, int batch_offset, int groups, 
 		program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("softmax_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&input.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&batch_offset));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&groups));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&group_offset));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(float), (void*)&temp));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(cl_mem), (void*)&output.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&input.buffer));
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&batch_offset));
+	cl->checkError(clkernel.setArgs(&groups));
+	cl->checkError(clkernel.setArgs(&group_offset));
+	cl->checkError(clkernel.setArgs(&stride));
+	cl->checkError(clkernel.setArgs(&temp));
+	cl->checkError(clkernel.setArgs(&output.buffer));
 
 	dim2 dim = cl_gridsize(batch*groups);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -1031,18 +1068,20 @@ void l2normalize_gpu(CLArray x, CLArray dx, int batch, int filters, int spatial)
 	cl_kernel kernel = program_2->getKernel("l2normalize_gpu");
 
 	int N = batch*spatial;
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&x.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&dx.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&batch));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&filters));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&spatial));
+
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&x.buffer));
+	cl->checkError(clkernel.setArgs(&dx.buffer));
+	cl->checkError(clkernel.setArgs(&batch));
+	cl->checkError(clkernel.setArgs(&filters));
+	cl->checkError(clkernel.setArgs(&spatial));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -1054,17 +1093,19 @@ void scale_mask_gpu(int N, CLArray X, float mask_num, CLArray mask, float scale)
 	if (program_2 == NULL)
 	program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("scale_mask_kernel");
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&N));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&X.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(float), (void*)&mask_num));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&mask.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&scale));
+
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&N));
+	cl->checkError(clkernel.setArgs(&X.buffer));
+	cl->checkError(clkernel.setArgs(&mask_num));
+	cl->checkError(clkernel.setArgs(&mask.buffer));
+	cl->checkError(clkernel.setArgs(&scale));
 
 	dim2 dim = cl_gridsize(N);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -1076,17 +1117,19 @@ void softmax_x_ent_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArra
 	if (program_2 == NULL)
 	program_2 = cl->buildProgramFromFile(kernel_file_2, "");
 	cl_kernel kernel = program_2->getKernel("softmax_x_ent_kernel");
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&n));
+	cl->checkError(clkernel.setArgs(&pred.buffer));
+	cl->checkError(clkernel.setArgs(&truth.buffer));
+	cl->checkError(clkernel.setArgs(&delta.buffer));
+	cl->checkError(clkernel.setArgs(&error.buffer));
 
 	dim2 dim = cl_gridsize(n);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(status);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -1098,17 +1141,19 @@ void logistic_x_ent_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArr
         if (program_2 == NULL)
         program_2 = cl->buildProgramFromFile(kernel_file_2, "");
         cl_kernel kernel = program_2->getKernel("logistic_x_ent_kernel");
-        cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-        cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-        cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-        cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-        cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+
+		CLKernel clkernel = CLKernel(kernel);
+        cl->checkError(clkernel.setArgs(&n));
+        cl->checkError(clkernel.setArgs(&pred.buffer));
+        cl->checkError(clkernel.setArgs(&truth.buffer));
+        cl->checkError(clkernel.setArgs(&delta.buffer));
+        cl->checkError(clkernel.setArgs(&error.buffer));
 
         dim2 dim = cl_gridsize(n);
         size_t global_size[] = { dim.x,dim.y,BLOCK };
 
         cl_event e;
-        cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+        cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
         cl->checkError(status);
         cl->checkError(clWaitForEvents(1, &e));
         clReleaseEvent(e);
@@ -1120,17 +1165,19 @@ void wgan_gpu(int n, CLArray pred, CLArray truth, CLArray delta, CLArray error)
         if (program_2 == NULL)
         program_2 = cl->buildProgramFromFile(kernel_file_2, "");
         cl_kernel kernel = program_2->getKernel("wgan_kernel");
-        cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&n));
-        cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&pred.buffer));
-        cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&truth.buffer));
-        cl->checkError(clSetKernelArg(kernel, 3, sizeof(cl_mem), (void*)&delta.buffer));
-        cl->checkError(clSetKernelArg(kernel, 4, sizeof(cl_mem), (void*)&error.buffer));
+
+		CLKernel clkernel = CLKernel(kernel);
+        cl->checkError(clkernel.setArgs(&n));
+        cl->checkError(clkernel.setArgs(&pred.buffer));
+        cl->checkError(clkernel.setArgs(&truth.buffer));
+        cl->checkError(clkernel.setArgs(&delta.buffer));
+        cl->checkError(clkernel.setArgs(&error.buffer));
 
         dim2 dim = cl_gridsize(n);
         size_t global_size[] = { dim.x,dim.y,BLOCK };
 
         cl_event e;
-        cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+        cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
         cl->checkError(status);
         cl->checkError(clWaitForEvents(1, &e));
         clReleaseEvent(e);
@@ -1143,22 +1190,24 @@ void upsample_gpu(CLArray in, int w, int h, int c, int batch, int stride, int fo
         program_2 = cl->buildProgramFromFile(kernel_file_2, "");
         cl_kernel kernel = program_2->getKernel("upsample_kernel");
 		int size = w*h*c*batch*stride*stride;
-        cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&size));
-        cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&in.buffer));
-        cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&w));
-        cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&h));
-        cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&c));
-        cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&batch));
-        cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
-        cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&forward));
-        cl->checkError(clSetKernelArg(kernel, 8, sizeof(float), (void*)&scale));
-        cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&out.buffer));
+
+		CLKernel clkernel = CLKernel(kernel);
+        cl->checkError(clkernel.setArgs(&size));
+        cl->checkError(clkernel.setArgs(&in.buffer));
+        cl->checkError(clkernel.setArgs(&w));
+        cl->checkError(clkernel.setArgs(&h));
+        cl->checkError(clkernel.setArgs(&c));
+        cl->checkError(clkernel.setArgs(&batch));
+        cl->checkError(clkernel.setArgs(&stride));
+        cl->checkError(clkernel.setArgs(&forward));
+        cl->checkError(clkernel.setArgs(&scale));
+        cl->checkError(clkernel.setArgs(&out.buffer));
 
         dim2 dim = cl_gridsize(size);
         size_t global_size[] = { dim.x,dim.y,BLOCK };
 
         cl_event e;
-        cl_int status = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+        cl_int status = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
         cl->checkError(status);
         cl->checkError(clWaitForEvents(1, &e));
         clReleaseEvent(e);

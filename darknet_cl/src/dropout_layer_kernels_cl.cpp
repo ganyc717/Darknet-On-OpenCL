@@ -17,17 +17,18 @@ void forward_dropout_layer_gpu(dropout_layer layer, network net)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("yoloswag420blazeit360noscope");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&net.input_gpu.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&layer.rand_gpu.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(float), (void*)&layer.probability));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&layer.scale));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&net.input_gpu.buffer));
+	cl->checkError(clkernel.setArgs(&size));
+	cl->checkError(clkernel.setArgs(&layer.rand_gpu.buffer));
+	cl->checkError(clkernel.setArgs(&layer.probability));
+	cl->checkError(clkernel.setArgs(&layer.scale));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);
@@ -43,17 +44,18 @@ void backward_dropout_layer_gpu(dropout_layer layer, network net)
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("yoloswag420blazeit360noscope");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(cl_mem), (void*)&net.delta_gpu.buffer));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(int), (void*)&size));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(cl_mem), (void*)&layer.rand_gpu.buffer));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(float), (void*)&layer.probability));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(float), (void*)&layer.scale));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&net.delta_gpu.buffer));
+	cl->checkError(clkernel.setArgs(&size));
+	cl->checkError(clkernel.setArgs(&layer.rand_gpu.buffer));
+	cl->checkError(clkernel.setArgs(&layer.probability));
+	cl->checkError(clkernel.setArgs(&layer.scale));
 
 	dim2 dim = cl_gridsize(size);
 	size_t global_size[] = { dim.x,dim.y,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 3, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 3, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);

@@ -17,21 +17,22 @@ void im2col_gpu(CLArray im,
 		program = cl->buildProgramFromFile(kernel_file, "");
 	cl_kernel kernel = program->getKernel("im2col_gpu_kernel");
 
-	cl->checkError(clSetKernelArg(kernel, 0, sizeof(int), (void*)&num_kernels));
-	cl->checkError(clSetKernelArg(kernel, 1, sizeof(cl_mem), (void*)&im.buffer));
-	cl->checkError(clSetKernelArg(kernel, 2, sizeof(int), (void*)&height));
-	cl->checkError(clSetKernelArg(kernel, 3, sizeof(int), (void*)&width));
-	cl->checkError(clSetKernelArg(kernel, 4, sizeof(int), (void*)&ksize));
-	cl->checkError(clSetKernelArg(kernel, 5, sizeof(int), (void*)&pad));
-	cl->checkError(clSetKernelArg(kernel, 6, sizeof(int), (void*)&stride));
-	cl->checkError(clSetKernelArg(kernel, 7, sizeof(int), (void*)&height_col));
-	cl->checkError(clSetKernelArg(kernel, 8, sizeof(int), (void*)&width_col));
-	cl->checkError(clSetKernelArg(kernel, 9, sizeof(cl_mem), (void*)&data_col.buffer));
+	CLKernel clkernel = CLKernel(kernel);
+	cl->checkError(clkernel.setArgs(&num_kernels));
+	cl->checkError(clkernel.setArgs(&im.buffer));
+	cl->checkError(clkernel.setArgs(&height));
+	cl->checkError(clkernel.setArgs(&width));
+	cl->checkError(clkernel.setArgs(&ksize));
+	cl->checkError(clkernel.setArgs(&pad));
+	cl->checkError(clkernel.setArgs(&stride));
+	cl->checkError(clkernel.setArgs(&height_col));
+	cl->checkError(clkernel.setArgs(&width_col));
+	cl->checkError(clkernel.setArgs(&data_col.buffer));
 
 	size_t global_size[] = { (num_kernels + BLOCK - 1) / BLOCK,BLOCK };
 
 	cl_event e;
-	cl_int error = clEnqueueNDRangeKernel(*cl->queue, kernel, 2, NULL, global_size, NULL, NULL, NULL, &e);
+	cl_int error = clkernel.run(*cl->queue, 2, NULL, global_size, NULL, NULL, NULL, &e);
 	cl->checkError(error);
 	cl->checkError(clWaitForEvents(1, &e));
 	clReleaseEvent(e);

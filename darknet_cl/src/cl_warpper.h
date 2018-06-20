@@ -25,6 +25,18 @@ private:
 	cl_program program;
 };
 
+class CLKernel {
+public:
+	CLKernel(cl_kernel kernel);
+	cl_int run(cl_command_queue queue, cl_uint dimension, const size_t* offset, const size_t* global, const size_t* local, cl_uint wait_event_num, const cl_event* wait_events, cl_event* e);
+	cl_int setArgs(cl_mem*);
+	cl_int setArgs(int*);
+	cl_int setArgs(float*);
+private:
+	cl_uint arg_index;
+	cl_kernel kernel;
+};
+
 class CLWarpper {
 public:
 	bool verbose;
