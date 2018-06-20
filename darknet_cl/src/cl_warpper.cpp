@@ -382,12 +382,21 @@ CLKernel::CLKernel(cl_kernel kernel)
 	this->arg_index = 0;
 }
 
+#ifndef SVM
 cl_int CLKernel::setArgs(cl_mem* buffer)
 {
 	cl_int error = clSetKernelArg(kernel, arg_index, sizeof(cl_mem), (void*)buffer);
 	arg_index++;
 	return error;
 }
+#else
+cl_int CLKernel::setArgs(void* buffer)
+{
+	cl_int error = clSetKernelArgSVMPointer(kernel, arg_index, buffer);
+	arg_index++;
+	return error;
+}
+#endif
 
 cl_int CLKernel::setArgs(int* buffer)
 {

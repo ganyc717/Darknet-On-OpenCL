@@ -16,9 +16,13 @@ extern int gpu_index;
 	#define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 	#include <CL/cl.h>
 	#include<clBLAS.h>
-    #ifdef CUDNN
-    #include "cudnn.h"
-    #endif
+	#ifdef CL_VERSION_2_0
+		#if CL_VERSION_2_0
+		#define SVM
+		//Enable shared virtual memory
+		#endif
+	#endif
+
 #endif
 
 #ifdef GPU
@@ -26,16 +30,26 @@ class CLArray
 {
 public:
 	CLArray();
+#ifndef SVM
 	CLArray(cl_mem major, cl_mem buffer, size_t major_size, size_t origin, size_t size);
+#else
+	CLArray(void* ptr, size_t major_size, size_t origin, size_t size);
+#endif
 	~CLArray();
 	size_t size;
+#ifndef SVM
 	cl_mem buffer;
+#else
+	void* buffer;
+#endif
 	friend CLArray operator+(CLArray, size_t);
 	friend CLArray operator-(CLArray, size_t);
 	CLArray &operator+= (size_t);
 	CLArray &operator-= (size_t);
 private:
+#ifndef SVM
 	cl_mem major;
+#endif
 	size_t major_size;
 	size_t origin;
 };
@@ -429,17 +443,6 @@ struct layer{
 	CLArray rand_gpu;
 	CLArray squared_gpu;
 	CLArray norms_gpu;
-#ifdef CUDNN
-    cudnnTensorDescriptor_t srcTensorDesc, dstTensorDesc;
-    cudnnTensorDescriptor_t dsrcTensorDesc, ddstTensorDesc;
-    cudnnTensorDescriptor_t normTensorDesc;
-    cudnnFilterDescriptor_t weightDesc;
-    cudnnFilterDescriptor_t dweightDesc;
-    cudnnConvolutionDescriptor_t convDesc;
-    cudnnConvolutionFwdAlgo_t fw_algo;
-    cudnnConvolutionBwdDataAlgo_t bd_algo;
-    cudnnConvolutionBwdFilterAlgo_t bf_algo;
-#endif
 #endif
 };
 

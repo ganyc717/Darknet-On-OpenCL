@@ -29,7 +29,11 @@ class CLKernel {
 public:
 	CLKernel(cl_kernel kernel);
 	cl_int run(cl_command_queue queue, cl_uint dimension, const size_t* offset, const size_t* global, const size_t* local, cl_uint wait_event_num, const cl_event* wait_events, cl_event* e);
+#ifndef SVM
 	cl_int setArgs(cl_mem*);
+#else
+	cl_int setArgs(void* buffer);
+#endif
 	cl_int setArgs(int*);
 	cl_int setArgs(float*);
 private:

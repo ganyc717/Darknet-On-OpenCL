@@ -18,6 +18,7 @@ std::shared_ptr<CLWarpper> getCLWarpper()
 
 CLArray operator+(CLArray buffer, size_t offset)
 {
+#ifndef SVM
 	assert(buffer.major != NULL);
 	cl_mem sub;
 	cl_int err;
@@ -34,6 +35,20 @@ CLArray operator+(CLArray buffer, size_t offset)
 	sub = clCreateSubBuffer(buffer.major, CL_MEM_READ_WRITE, CL_BUFFER_CREATE_TYPE_REGION, &region, &err);
 	check_error(err);
 	return CLArray(buffer.major, sub, buffer.major_size, origin, sub_buffer_size);
+#else
+	assert(buffer.buffer != NULL);
+	cl_mem sub;
+	cl_int err;
+	cl_buffer_region region;
+
+	size_t origin = buffer.origin + offset;
+	assert(origin >= 0);
+	size_t sub_buffer_size = buffer.major_size - origin;
+	assert(sub_buffer_size >= 0);
+
+	float* host_ptr = (float*)buffer.buffer;
+	return CLArray(host_ptr + offset, buffer.major_size, origin, sub_buffer_size);
+#endif
 }
 
 CLArray operator-(CLArray buffer, size_t offset)
@@ -56,13 +71,16 @@ CLArray &CLArray::operator-= (size_t offset)
 
 CLArray::CLArray()
 {
+#ifndef SVM
     major = 0;
+#endif
     buffer = 0;
     origin = 0;
     major_size = 0;
     size = 0;
 };
 
+#ifndef SVM
 CLArray::CLArray(cl_mem major_mem, cl_mem mem, size_t major_mem_size, size_t origin_offset, size_t buf_size)
 {
     major = major_mem;
@@ -71,6 +89,15 @@ CLArray::CLArray(cl_mem major_mem, cl_mem mem, size_t major_mem_size, size_t ori
     origin = origin_offset;
     size = buf_size;
 };
+#else
+CLArray::CLArray(void* map_ptr, size_t major_mem_size, size_t origin_offset, size_t buf_size)
+{
+	buffer = map_ptr;
+	major_size = major_mem_size;
+	origin = origin_offset;
+	size = buf_size;
+}
+#endif
 
 CLArray::~CLArray()
 {};//Do nothing here, explicitly call cl_free to release cl_mem
@@ -114,6 +141,7 @@ dim2 cl_gridsize(size_t n){
 
 CLArray cl_make_array(float *x, size_t n)
 {
+#ifndef SVM
     cl_mem x_gpu;
 	cl_int error;
     size_t size = sizeof(float)*n;
@@ -128,6 +156,24 @@ CLArray cl_make_array(float *x, size_t n)
         fill_gpu(n, 0, buf, 1);
     }
     if(!x_gpu) throw std::runtime_error("opencl malloc failed\n");
+#else
+	void* x_gpu;
+	size_t size = sizeof(float)*n;
+	x_gpu = clSVMAlloc(*(cl->context), CL_MEM_READ_WRITE, size, 0);
+	CLArray buf = CLArray(x_gpu, n, 0, n);
+	if (x) {
+		cl_event e;
+		check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_WRITE, x_gpu, size, 0, NULL, NULL));
+		memcpy(x_gpu, x, size);
+		check_error(clEnqueueSVMUnmap(*(cl->queue), x_gpu, 0, NULL, &e));
+		check_error(clWaitForEvents(1, &e));
+		clReleaseEvent(e);
+	}
+	else {
+		fill_gpu(n, 0, buf, 1);
+	}
+	if (!x_gpu) throw std::runtime_error("opencl malloc failed\n");
+#endif
 	return buf;
 }
 
@@ -135,11 +181,23 @@ void cl_random(CLArray x_gpu, size_t n)
 {//Any good idea to generate random float using opencl?
 	std::default_random_engine e;
 	std::uniform_real_distribution<float> u(0.0, 1.0);
+#ifndef SVM
 	float* buffer = new float[n];
 	for (int i = 0; i < n; i++)
 		buffer[i] = u(e);
 	cl_push_array(x_gpu, buffer, n);
 	delete[] buffer;
+#else
+	cl_event event;
+	size_t size = n * sizeof(float);
+	check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_WRITE, x_gpu.buffer, size, 0, NULL, NULL));
+	float* buffer = (float*)x_gpu.buffer;
+	for (int i = 0; i < n; i++)
+		buffer[i] = u(e);
+	check_error(clEnqueueSVMUnmap(*(cl->queue), x_gpu.buffer, 0, NULL, &event));
+	check_error(clWaitForEvents(1, &event));
+	clReleaseEvent(event);
+#endif
 }
 
 float cl_compare(CLArray x_gpu, float *x, size_t n, char *s)
@@ -156,7 +214,7 @@ float cl_compare(CLArray x_gpu, float *x, size_t n, char *s)
 }
 
 CLArray cl_make_int_array(int *x, size_t n)
-{
+{/*
 	cl_mem x_gpu;
 	cl_int error;
 	size_t size = sizeof(int)*n;
@@ -172,24 +230,40 @@ CLArray cl_make_int_array(int *x, size_t n)
 		fill_gpu(n, 0, buf, 1);
 	}
 	if (!x_gpu) throw std::runtime_error("opencl malloc failed\n");
-	return buf;
+	return buf;*/
+	return cl_make_array((float*)x, n);
 }
 
 void cl_free(CLArray x_gpu)
 {
+#ifndef SVM
     cl_int status = clReleaseMemObject(x_gpu.buffer);
-    check_error(status);
+	check_error(status);
+#else
+	clSVMFree(*(cl->context), x_gpu.buffer);
+#endif
 }
 
 void cl_push_array(CLArray x_gpu, float *x, size_t n)
 {
+#ifndef SVM
     size_t size = sizeof(float)*n;
     cl_int status = clEnqueueWriteBuffer(*(cl->queue), x_gpu.buffer, CL_TRUE, 0, size, x, 0, NULL, NULL);
     check_error(status);
+#else
+	cl_event e;
+	size_t size = sizeof(float)*n;
+	check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_WRITE, x_gpu.buffer, size, 0, NULL, NULL));
+	memcpy(x_gpu.buffer, x, size);
+	check_error(clEnqueueSVMUnmap(*(cl->queue), x_gpu.buffer, 0, NULL, &e));
+	check_error(clWaitForEvents(1, &e));
+	clReleaseEvent(e);
+#endif
 }
 
 void cl_pull_array(CLArray x_gpu, float *x, size_t n)
 {
+#ifndef SVM
 	cl_event event = NULL;
 	cl_int status;
 	size_t size = sizeof(float) * n;
@@ -200,6 +274,15 @@ void cl_pull_array(CLArray x_gpu, float *x, size_t n)
 	if (err != CL_SUCCESS) {
 		throw std::runtime_error("wait for event on copytohost failed with " + CLWarpper::toString(err));
 	}
+#else
+	cl_event e;
+	size_t size = sizeof(float)*n;
+	check_error(clEnqueueSVMMap(*(cl->queue), CL_TRUE, CL_MAP_READ, x_gpu.buffer, size, 0, NULL, NULL));
+	memcpy(x, x_gpu.buffer, size);
+	check_error(clEnqueueSVMUnmap(*(cl->queue), x_gpu.buffer, 0, NULL, &e));
+	check_error(clWaitForEvents(1, &e));
+	clReleaseEvent(e);
+#endif
 }
 
 float cl_mag_array(CLArray x_gpu, size_t n)
