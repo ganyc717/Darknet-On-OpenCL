@@ -93,23 +93,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
 		net.input_gpu = l.binary_input_gpu;
 	}
 
-#ifdef CUDNN
-	float one = 1;
-	cudnnConvolutionForward(cudnn_handle(),
-		&one,
-		l.srcTensorDesc,
-		net.input_gpu,
-		l.weightDesc,
-		l.weights_gpu,
-		l.convDesc,
-		l.fw_algo,
-		net.workspace,
-		l.workspace_size,
-		&one,
-		l.dstTensorDesc,
-		l.output_gpu);
-
-#else
 	int i, j;
 	int m = l.n / l.groups;
 	int k = l.size*l.size*l.c / l.groups;
@@ -131,7 +114,6 @@ void forward_convolutional_layer_gpu(convolutional_layer l, network net)
 			cl_free(input_gpu);
 		}
 	}
-#endif
 
 	if (l.batch_normalize) {
 		forward_batchnorm_layer_gpu(l, net);
@@ -194,42 +176,7 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 	CLArray original_input = net.input_gpu;
 
 	if (l.xnor) net.input_gpu = l.binary_input_gpu;
-#ifdef CUDNN
-	float one = 1;
-	cudnnConvolutionBackwardFilter(cudnn_handle(),
-		&one,
-		l.srcTensorDesc,
-		net.input_gpu,
-		l.ddstTensorDesc,
-		l.delta_gpu,
-		l.convDesc,
-		l.bf_algo,
-		net.workspace,
-		l.workspace_size,
-		&one,
-		l.dweightDesc,
-		l.weight_updates_gpu);
 
-	if (net.delta_gpu) {
-		if (l.binary || l.xnor) swap_binary(&l);
-		cudnnConvolutionBackwardData(cudnn_handle(),
-			&one,
-			l.weightDesc,
-			l.weights_gpu,
-			l.ddstTensorDesc,
-			l.delta_gpu,
-			l.convDesc,
-			l.bd_algo,
-			net.workspace,
-			l.workspace_size,
-			&one,
-			l.dsrcTensorDesc,
-			net.delta_gpu);
-		if (l.binary || l.xnor) swap_binary(&l);
-		if (l.xnor) gradient_array_gpu(original_input, l.batch*l.c*l.h*l.w, HARDTAN, net.delta_gpu);
-	}
-
-#else
 	int m = l.n / l.groups;
 	int n = l.size*l.size*l.c / l.groups;
 	int k = l.out_w*l.out_h;
@@ -284,7 +231,6 @@ void backward_convolutional_layer_gpu(convolutional_layer l, network net)
 			cl_free(original_input_gpu);
 		}
 	}
-#endif
 }
 
 void pull_convolutional_layer(layer l)

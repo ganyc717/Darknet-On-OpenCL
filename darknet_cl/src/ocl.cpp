@@ -112,20 +112,6 @@ dim2 cl_gridsize(size_t n){
     return d;
 }
 
-#ifdef CUDNN
-cudnnHandle_t cudnn_handle()
-{
-    static int init[16] = {0};
-    static cudnnHandle_t handle[16];
-    int i = cuda_get_device();
-    if(!init[i]) {
-        cudnnCreate(&handle[i]);
-        init[i] = 1;
-    }
-    return handle[i];
-}
-#endif
-
 CLArray cl_make_array(float *x, size_t n)
 {
     cl_mem x_gpu;

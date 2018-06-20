@@ -20,10 +20,5 @@ void cl_random(CLArray x_gpu, size_t n);
 float cl_compare(CLArray x_gpu, float *x, size_t n, char *s);
 dim2 cl_gridsize(size_t n);
 
-
-#ifdef CUDNN
-cudnnHandle_t cudnn_handle();
-#endif
-
 #endif
 #endif
