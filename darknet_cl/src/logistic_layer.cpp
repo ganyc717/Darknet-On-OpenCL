@@ -13,7 +13,7 @@ layer make_logistic_layer(int batch, int inputs)
 {
     fprintf(stderr, "logistic x entropy                             %4d\n",  inputs);
     layer l;
-    memset(&l, sizeof(layer), 0);
+	memset(&l, 0, sizeof(layer));
     l.type = LOGXENT;
     l.batch = batch;
     l.inputs = inputs;

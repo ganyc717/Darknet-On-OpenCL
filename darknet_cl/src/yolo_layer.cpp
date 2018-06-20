@@ -14,9 +14,8 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
 {
     int i;
     layer l;
-    memset(&l, sizeof(layer), 0);
+	memset(&l, 0, sizeof(layer));
     l.type = YOLO;
-
     l.n = n;
     l.total = total;
     l.batch = batch;
@@ -54,7 +53,6 @@ layer make_yolo_layer(int batch, int w, int h, int n, int total, int *mask, int 
     l.output_gpu = cl_make_array(l.output, batch*l.outputs);
     l.delta_gpu = cl_make_array(l.delta, batch*l.outputs);
 #endif
-
     fprintf(stderr, "yolo\n");
     srand(0);
 
